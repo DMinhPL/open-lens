@@ -42,5 +42,6 @@ next-env.d.ts
 
 .claude/
 .gitnexus/
+
 AGENTS.md
 CLAUDE.md

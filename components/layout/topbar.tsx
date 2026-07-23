@@ -20,9 +20,9 @@ export function Topbar() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All projects</SelectItem>
-            {projects.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
+            {projects.map((projectOption) => (
+              <SelectItem key={projectOption.id} value={String(projectOption.id)}>
+                {projectOption.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -33,9 +33,9 @@ export function Topbar() {
             <SelectValue placeholder="Period" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="week">Weekly</SelectItem>
-            <SelectItem value="month">Monthly</SelectItem>
-            <SelectItem value="quarter">Quarterly</SelectItem>
+            <SelectItem value="week">This week</SelectItem>
+            <SelectItem value="month">This month</SelectItem>
+            <SelectItem value="quarter">This quarter</SelectItem>
           </SelectContent>
         </Select>
 

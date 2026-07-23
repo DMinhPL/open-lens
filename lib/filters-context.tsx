@@ -1,14 +1,17 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import type { Period, WorkPackage } from "@/lib/types";
+import { useAppSelector } from "@/lib/store/hooks";
+import { useApiQuery } from "@/lib/api/use-api-query";
+import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
+import type { OpenProjectProjectSummary, Period, WorkPackage } from "@/lib/types";
 
 interface FiltersContextValue {
   allWorkPackages: WorkPackage[];
   workPackages: WorkPackage[];
   loading: boolean;
   error: string | null;
-  projects: string[];
+  projects: OpenProjectProjectSummary[];
   project: string;
   setProject: (project: string) => void;
   period: Period;
@@ -21,12 +24,16 @@ export const DEFAULT_PROJECT_KEY = "openlens_default_project";
 const FiltersContext = createContext<FiltersContextValue | null>(null);
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
-  const [allWorkPackages, setAllWorkPackages] = useState<WorkPackage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const userProjects = useAppSelector((state) => state.user.projects);
+  const {
+    data,
+    loading,
+    error,
+    refresh,
+  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages");
+  const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [project, setProjectState] = useState("all");
   const [period, setPeriod] = useState<Period>("month");
-  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     // Reads browser-only storage post-mount; cannot be a lazy useState initializer because this runs during SSR.
@@ -35,45 +42,27 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     if (defaultProject) setProjectState(defaultProject);
   }, []);
 
+  useEffect(() => {
+    if (!userProjects || project === "all") return;
+    if (userProjects.some((userProject) => String(userProject.id) === project)) return;
+
+    const legacyProject = userProjects.find((userProject) => userProject.name === project);
+    const migratedProject = legacyProject ? String(legacyProject.id) : "all";
+    window.localStorage.setItem(DEFAULT_PROJECT_KEY, migratedProject);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- migrates legacy name-based project values to IDs
+    setProjectState(migratedProject);
+  }, [project, userProjects]);
+
   function setProject(value: string) {
     setProjectState(value);
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to loading whenever refreshToken changes
-    setLoading(true);
-    fetch("/api/openproject/work-packages")
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data.error) {
-          setError(data.error);
-          setAllWorkPackages([]);
-        } else {
-          setError(null);
-          setAllWorkPackages(data.workPackages ?? []);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load data");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshToken]);
-
-  const projects = useMemo(
-    () => Array.from(new Set(allWorkPackages.map((wp) => wp.project))).sort(),
-    [allWorkPackages],
-  );
-
   const workPackages = useMemo(
-    () => (project === "all" ? allWorkPackages : allWorkPackages.filter((wp) => wp.project === project)),
-    [allWorkPackages, project],
+    () =>
+      allWorkPackages
+        .filter((workPackage) => matchesProject(workPackage, project))
+        .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period)),
+    [allWorkPackages, project, period],
   );
 
   const value: FiltersContextValue = {
@@ -81,12 +70,12 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     workPackages,
     loading,
     error,
-    projects,
+    projects: userProjects ?? [],
     project,
     setProject,
     period,
     setPeriod,
-    refresh: () => setRefreshToken((t) => t + 1),
+    refresh,
   };
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;

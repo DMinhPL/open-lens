@@ -44,6 +44,17 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (defaultProject === "all" || projects.length === 0) return;
+    if (projects.some((projectOption) => String(projectOption.id) === defaultProject)) return;
+
+    const legacyProject = projects.find((projectOption) => projectOption.name === defaultProject);
+    const migratedProject = legacyProject ? String(legacyProject.id) : "all";
+    window.localStorage.setItem(DEFAULT_PROJECT_KEY, migratedProject);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- migrates legacy name-based project values to IDs
+    setDefaultProject(migratedProject);
+  }, [defaultProject, projects]);
+
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the controlled input once settings arrive
     if (settings) setInstanceUrl(settings.instanceUrl ?? "");
   }, [settings]);
@@ -245,9 +256,9 @@ export default function SettingsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All projects</SelectItem>
-              {projects.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {projects.map((projectOption) => (
+                <SelectItem key={projectOption.id} value={String(projectOption.id)}>
+                  {projectOption.name}
                 </SelectItem>
               ))}
             </SelectContent>

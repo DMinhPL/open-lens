@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useFilters } from "@/lib/filters-context";
+import { useApiQuery } from "@/lib/api/use-api-query";
 import {
   computeWeeklyTrend,
   computeMonthlyTrend,
@@ -23,6 +24,8 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, CircleDot, ListTodo, Timer } from "lucide-react";
+import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
+import type { WorkPackage } from "@/lib/types";
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -37,7 +40,12 @@ function monthsAgo(n: number) {
 }
 
 export default function DashboardPage() {
-  const { workPackages, loading, error, period } = useFilters();
+  const { workPackages, loading, error, period, project } = useFilters();
+  const {
+    data: myWorkPackagesData,
+    loading: recentLoading,
+    error: recentError,
+  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages?mine=true");
 
   const completedThisWeek = useMemo(() => countCompletedSince(workPackages, daysAgo(7)), [workPackages]);
   const completedThisMonth = useMemo(() => countCompletedSince(workPackages, monthsAgo(1)), [workPackages]);
@@ -52,12 +60,14 @@ export default function DashboardPage() {
 
   const statusBreakdown = useMemo(() => computeStatusBreakdown(workPackages), [workPackages]);
 
-  const recent = useMemo(
+  const recentList = useMemo(
     () =>
-      [...workPackages]
+      (myWorkPackagesData?.workPackages ?? [])
+        .filter((workPackage) => matchesProject(workPackage, project))
+        .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period))
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, 8),
-    [workPackages],
+    [myWorkPackagesData, project, period],
   );
 
   const trendTitle =
@@ -68,7 +78,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="dashboard-container flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)
@@ -89,17 +99,19 @@ export default function DashboardPage() {
         <div>{loading ? <Skeleton className="h-80 w-full" /> : <StatusDonut data={statusBreakdown} />}</div>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border recent-tickets-container">
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <ListTodo className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium">Recent tickets</h2>
+          <h2 className="text-sm font-medium">My recent tickets</h2>
         </div>
-        {loading ? (
+        {recentLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
+        ) : recentError ? (
+          <p className="p-4 text-sm text-destructive">{recentError}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -113,22 +125,30 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recent.map((wp) => (
-                <TableRow key={wp.id}>
-                  <TableCell className="font-medium">{wp.subject}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={wp.status} />
-                  </TableCell>
-                  <TableCell>
-                    <PriorityBadge priority={wp.priority} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{wp.project}</TableCell>
-                  <TableCell className="text-muted-foreground">{wp.assignee}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {new Date(wp.updatedAt).toLocaleDateString()}
+              {recentList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No recent tickets assigned to you.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                recentList.map((wp) => (
+                  <TableRow key={wp.id}>
+                    <TableCell className="font-medium">{wp.subject}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={wp.status} />
+                    </TableCell>
+                    <TableCell>
+                      <PriorityBadge priority={wp.priority} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{wp.project}</TableCell>
+                    <TableCell className="text-muted-foreground">{wp.assignee}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {new Date(wp.updatedAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         )}

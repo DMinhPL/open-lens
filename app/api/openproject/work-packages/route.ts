@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWorkPackages } from "@/lib/openproject-client";
+import { getWorkPackages, getWorkPackagesForCurrentUser } from "@/lib/openproject-client";
 
 export async function GET(request: NextRequest) {
   try {
-    const workPackages = await getWorkPackages();
     const params = request.nextUrl.searchParams;
+    const workPackages =
+      params.get("mine") === "true" ? await getWorkPackagesForCurrentUser() : await getWorkPackages();
 
     const status = params.get("status");
     const priority = params.get("priority");

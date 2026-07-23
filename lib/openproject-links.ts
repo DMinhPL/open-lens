@@ -6,3 +6,9 @@ export function getProjectUrl(instanceUrl: string | null | undefined, identifier
   const base = (instanceUrl || DEFAULT_OPENPROJECT_URL).replace(/\/$/, "");
   return `${base}/projects/${identifier}`;
 }
+
+/** Builds the browser URL for a work package on the actual OpenProject instance. */
+export function getWorkPackageUrl(instanceUrl: string | null | undefined, id: number): string {
+  const base = (instanceUrl || DEFAULT_OPENPROJECT_URL).replace(/\/$/, "");
+  return `${base}/work_packages/${id}`;
+}

@@ -55,14 +55,19 @@ async function openProjectGet<T>(instanceUrl: string, apiToken: string, path: st
 interface RawOpenProjectWorkPackage {
   id: number;
   subject: string;
-  percentageDone: number;
+  percentageDone: number | null;
   createdAt: string;
   updatedAt: string;
+  startDate?: string | null;
+  derivedDueDate?: string | null;
+  spentTime?: string | null;
   _links: {
+    type?: { title?: string };
     status?: { title?: string };
     priority?: { title?: string };
-    project?: { title?: string };
+    project?: { href?: string; title?: string };
     assignee?: { title?: string };
+    author?: { title?: string };
   };
 }
 
@@ -94,19 +99,54 @@ function mapPriority(title?: string): WorkPackagePriority {
   }
 }
 
+function durationToHours(duration?: string | null): number | undefined {
+  if (!duration) return undefined;
+
+  const match = duration.match(
+    /^P(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
+  );
+  if (!match) return undefined;
+
+  const [, weeks = "0", days = "0", hours = "0", minutes = "0", seconds = "0"] = match;
+  return (
+    Number(weeks) * 168 +
+    Number(days) * 24 +
+    Number(hours) +
+    Number(minutes) / 60 +
+    Number(seconds) / 3600
+  );
+}
+
+function idFromHref(href?: string): number | undefined {
+  if (!href) return undefined;
+
+  const match = href.match(/\/(\d+)\/?(?:[?#].*)?$/);
+  return match ? Number(match[1]) : undefined;
+}
+
 function mapWorkPackage(raw: RawOpenProjectWorkPackage): WorkPackage {
-  const status = mapStatus(raw._links.status?.title);
+  const statusLabel = raw._links.status?.title;
+  const priorityLabel = raw._links.priority?.title;
+  const status = mapStatus(statusLabel);
   return {
     id: raw.id,
     subject: raw.subject,
+    type: raw._links.type?.title ?? "Unknown",
     status,
-    priority: mapPriority(raw._links.priority?.title),
+    statusLabel: statusLabel ?? status,
+    priority: mapPriority(priorityLabel),
+    priorityLabel: priorityLabel ?? mapPriority(priorityLabel),
     project: raw._links.project?.title ?? "Unknown",
+    projectId: idFromHref(raw._links.project?.href),
     assignee: raw._links.assignee?.title ?? "Unassigned",
+    author: raw._links.author?.title ?? "Unknown",
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     closedAt: status === "Closed" ? raw.updatedAt : undefined,
-    percentDone: raw.percentageDone,
+    startDate: raw.startDate ?? undefined,
+    derivedDueDate: raw.derivedDueDate ?? undefined,
+    percentDone: raw.percentageDone ?? 0,
+    spentHours: durationToHours(raw.spentTime),
   };
 }
 
@@ -117,11 +157,51 @@ interface HalCollection<T> {
   _embedded: { elements: T[] };
 }
 
-async function fetchFromOpenProject(instanceUrl: string, apiToken: string): Promise<WorkPackage[]> {
+type WorkPackageFilter = Record<string, { operator: string; values: string[] }>;
+
+function getDummyWorkPackages(): WorkPackage[] {
+  type DummyWorkPackage = Partial<WorkPackage> &
+    Pick<
+      WorkPackage,
+      | "id"
+      | "subject"
+      | "status"
+      | "priority"
+      | "project"
+      | "assignee"
+      | "createdAt"
+      | "updatedAt"
+      | "percentDone"
+    >;
+
+  const projectNames = Array.from(
+    new Set((dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => workPackage.project)),
+  ).sort((a, b) => a.localeCompare(b));
+
+  return (dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => ({
+    ...workPackage,
+    projectId: workPackage.projectId ?? projectNames.indexOf(workPackage.project) + 1,
+    type: workPackage.type ?? "Task",
+    statusLabel: workPackage.statusLabel ?? workPackage.status,
+    priorityLabel: workPackage.priorityLabel ?? workPackage.priority,
+    author: workPackage.author ?? workPackage.assignee,
+    spentHours: workPackage.spentHours ?? 0,
+  }));
+}
+
+async function fetchFromOpenProject(
+  instanceUrl: string,
+  apiToken: string,
+  filters: WorkPackageFilter[] = [],
+): Promise<WorkPackage[]> {
+  const params = new URLSearchParams({
+    pageSize: "200",
+    filters: JSON.stringify(filters),
+  });
   const json = await openProjectGet<HalCollection<RawOpenProjectWorkPackage>>(
     instanceUrl,
     apiToken,
-    "/api/v3/work_packages?pageSize=200",
+    `/api/v3/work_packages?${params.toString()}`,
   );
   return (json._embedded?.elements ?? []).map(mapWorkPackage);
 }
@@ -130,7 +210,7 @@ export async function getWorkPackages(): Promise<WorkPackage[]> {
   const settings = await getOpSettings();
 
   if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
-    return dummyWorkPackages as WorkPackage[];
+    return getDummyWorkPackages();
   }
 
   return fetchFromOpenProject(settings.instanceUrl, settings.apiToken);
@@ -172,6 +252,29 @@ function mapUser(raw: RawOpenProjectUser): OpenProjectUser {
     status: raw.status,
     admin: raw.admin,
   };
+}
+
+/** Returns work packages assigned to the currently authenticated OpenProject user. */
+export async function getWorkPackagesForCurrentUser(): Promise<WorkPackage[]> {
+  const settings = await getOpSettings();
+
+  if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
+    return getDummyWorkPackages();
+  }
+
+  const currentUser = await openProjectGet<RawOpenProjectUser>(
+    settings.instanceUrl,
+    settings.apiToken,
+    "/api/v3/users/me",
+  );
+  return fetchFromOpenProject(settings.instanceUrl, settings.apiToken, [
+    {
+      assigned_to: {
+        operator: "=",
+        values: [String(currentUser.id)],
+      },
+    },
+  ]);
 }
 
 /** Returns the current user, honoring the dummy-data switch just like {@link getWorkPackages}. */

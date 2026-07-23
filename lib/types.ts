@@ -5,9 +5,13 @@ export type WorkPackagePriority = "Low" | "Normal" | "High" | "Immediate";
 export interface WorkPackage {
   id: number;
   subject: string;
+  type: string;
   status: WorkPackageStatus;
+  statusLabel?: string; // exact status title returned by OpenProject
   priority: WorkPackagePriority;
+  priorityLabel?: string; // exact priority title returned by OpenProject
   project: string;
+  projectId?: number; // extracted from OpenProject's `_links.project.href`
   assignee: string;
   author: string;
   createdAt: string; // ISO date
@@ -16,7 +20,7 @@ export interface WorkPackage {
   startDate?: string; // ISO date, from OpenProject's `startDate`
   derivedDueDate?: string; // ISO date, from OpenProject's `derivedDueDate`
   percentDone: number; // 0-100
-  spentHours: number; // total logged time in hours, from OpenProject's `spentTime` duration
+  spentHours?: number; // total logged time in hours, from OpenProject's `spentTime` duration
 }
 
 export type Period = "week" | "month" | "quarter";
