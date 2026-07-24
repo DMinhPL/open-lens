@@ -1,30 +1,26 @@
 "use client";
 
 import "@/lib/chart-setup";
-import { useMemo } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/lib/use-chart-colors";
-import { useAppSelector } from "@/lib/store/hooks";
-import { buildStatusColorMap, getStatusColor } from "@/lib/status-colors";
-import type { StatusBreakdown } from "@/lib/types";
+import { getTypeColor } from "@/lib/type-colors";
+import type { TypeBreakdown } from "@/lib/types";
 
-interface StatusDonutProps {
-  data: StatusBreakdown[];
+interface TypeDonutProps {
+  data: TypeBreakdown[];
 }
 
-export function StatusDonut({ data }: StatusDonutProps) {
+export function TypeDonut({ data }: TypeDonutProps) {
   const ink = useChartInk();
-  const statuses = useAppSelector((state) => state.common.statuses);
-  const colorMap = useMemo(() => buildStatusColorMap(statuses), [statuses]);
   const filtered = data.filter((d) => d.count > 0);
 
   const chartData = {
-    labels: filtered.map((d) => d.status),
+    labels: filtered.map((d) => d.type),
     datasets: [
       {
         data: filtered.map((d) => d.count),
-        backgroundColor: filtered.map((d) => getStatusColor(d.status, colorMap)),
+        backgroundColor: filtered.map((d) => getTypeColor(d.type)),
         borderColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
         borderWidth: 2,
       },
@@ -54,7 +50,7 @@ export function StatusDonut({ data }: StatusDonutProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">Status breakdown</CardTitle>
+        <CardTitle className="text-sm font-medium">Ticket type overview</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
         {filtered.length === 0 ? (

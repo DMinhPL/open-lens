@@ -1,13 +1,11 @@
-import { Badge } from "@/components/ui/badge";
-import type { WorkPackagePriority, WorkPackageStatus } from "@/lib/types";
-import { cn } from "@/lib/utils";
+"use client";
 
-const STATUS_STYLES: Record<WorkPackageStatus, string> = {
-  New: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  "In progress": "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  Closed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  "On hold": "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
-};
+import { useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import type { WorkPackagePriority } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/store/hooks";
+import { buildStatusColorMap, getStatusBadgeStyle } from "@/lib/status-colors";
 
 const PRIORITY_STYLES: Record<WorkPackagePriority, string> = {
   Low: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
@@ -16,15 +14,20 @@ const PRIORITY_STYLES: Record<WorkPackagePriority, string> = {
   Immediate: "bg-red-200 text-red-900 dark:bg-red-950 dark:text-red-300",
 };
 
-export function StatusBadge({ status }: { status: WorkPackageStatus }) {
+export function StatusBadge({ status }: Readonly<{ status: string }>) {
+  const statuses = useAppSelector((state) => state.common.statuses);
+  const colorMap = useMemo(() => buildStatusColorMap(statuses), [statuses]);
+  const style = useMemo(() => getStatusBadgeStyle(status, colorMap), [status, colorMap]);
+
   return (
-    <Badge variant="secondary" className={cn("border-transparent font-medium", STATUS_STYLES[status])}>
+    <Badge variant="outline" className="border" style={style}>
+      <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
       {status}
     </Badge>
   );
 }
 
-export function PriorityBadge({ priority }: { priority: WorkPackagePriority }) {
+export function PriorityBadge({ priority }: Readonly<{ priority: WorkPackagePriority }>) {
   return (
     <Badge variant="secondary" className={cn("border-transparent font-medium", PRIORITY_STYLES[priority])}>
       {priority}

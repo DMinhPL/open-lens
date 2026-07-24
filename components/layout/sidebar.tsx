@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/store/hooks";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -15,9 +17,10 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const currentUser = useAppSelector((state) => state.user.info);
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r bg-sidebar text-sidebar-foreground md:flex md:flex-col">
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 overflow-y-auto border-r bg-sidebar text-sidebar-foreground md:flex md:flex-col">
       <div className="flex h-14 items-center gap-2 border-b px-4">
         <Telescope className="size-5" />
         <span className="font-semibold">OpenLens</span>
@@ -43,6 +46,15 @@ export function Sidebar() {
           );
         })}
       </nav>
+      {currentUser && (
+        <div className="flex items-center gap-2 border-t px-4 py-3">
+          <Avatar size="sm">
+            <AvatarImage src={currentUser.avatar ?? undefined} alt={currentUser.name} />
+            <AvatarFallback>{currentUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span className="truncate text-sm font-medium">{currentUser.name}</span>
+        </div>
+      )}
     </aside>
   );
 }

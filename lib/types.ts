@@ -1,5 +1,12 @@
-export type WorkPackageStatus = "New" | "In progress" | "Closed" | "On hold";
-
+export type WorkPackageStatus =
+  | "New"
+  | "In Progress"
+  | "Resolved"
+  | "Closed"
+  | "Developed"
+  | "Open"
+  | "Done"
+  | "Cancelled";
 export type WorkPackagePriority = "Low" | "Normal" | "High" | "Immediate";
 
 export interface WorkPackage {
@@ -17,8 +24,10 @@ export interface WorkPackage {
   createdAt: string; // ISO date
   updatedAt: string; // ISO date
   closedAt?: string; // ISO date, present if status is Closed
-  startDate?: string; // ISO date, from OpenProject's `startDate`
-  derivedDueDate?: string; // ISO date, from OpenProject's `derivedDueDate`
+  startDate?: string; // yyyy-MM-dd, from OpenProject's `startDate`
+  derivedDueDate?: string; //yyyy-MM-dd, from OpenProject's `startDate`
+  dueDate?: string; //yyyy-MM-dd, from OpenProject's `startDate`
+  customField25?: string; //yyyy-MM-dd, from OpenProject's `releaseDevDate`
   percentDone: number; // 0-100
   spentHours?: number; // total logged time in hours, from OpenProject's `spentTime` duration
 }
@@ -32,8 +41,32 @@ export interface TrendPoint {
 }
 
 export interface StatusBreakdown {
-  status: WorkPackageStatus;
+  status: string;
   count: number;
+}
+
+export interface TypeBreakdown {
+  type: string;
+  count: number;
+}
+
+export interface DailyTypeTrendPoint {
+  label: string; // e.g. "7/24"
+  date: string; // ISO date, start of day (UTC)
+  byType: Record<string, number>; // tickets created that day, keyed by type
+}
+
+export interface TypeThroughput {
+  type: string;
+  created: number; // tickets of this type created within the selected period
+  completed: number; // tickets of this type completed within the selected period
+}
+
+export interface BurnupPoint {
+  label: string; // e.g. "7/24"
+  date: string; // ISO date, start of day (UTC)
+  completed: number; // cumulative Task/Bug tickets done as of this day
+  total: number; // cumulative Task/Bug tickets in scope (created) as of this day
 }
 
 export interface WorkloadEntry {
@@ -86,4 +119,17 @@ export interface OpenProjectSettings {
   hasCredentials: boolean;
   instanceUrl: string | null;
   useDummyData: boolean;
+}
+
+/**
+ * Trimmed-down view of OpenProject's `StatusModel` (see spec.json.json →
+ * components.schemas.StatusModel).
+ */
+export interface OpenProjectStatus {
+  id: number;
+  name: string;
+  isClosed: boolean;
+  color: string | null;
+  isDefault: boolean;
+  position: number;
 }

@@ -30,7 +30,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     refresh,
-  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages");
+  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages?mine=true");
   const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [project, setProjectState] = useState("all");
   const [period, setPeriod] = useState<Period>("month");
@@ -61,7 +61,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     () =>
       allWorkPackages
         .filter((workPackage) => matchesProject(workPackage, project))
-        .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period)),
+    ,
     [allWorkPackages, project, period],
   );
 

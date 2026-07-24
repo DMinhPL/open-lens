@@ -2,17 +2,28 @@
 
 import { useMemo } from "react";
 import { useFilters } from "@/lib/filters-context";
-import { useApiQuery } from "@/lib/api/use-api-query";
+import { useAppSelector } from "@/lib/store/hooks";
+import { getStatusNames } from "@/lib/status-colors";
 import {
   computeWeeklyTrend,
   computeMonthlyTrend,
   computeQuarterlyTrend,
   computeStatusBreakdown,
+  computeTypeBreakdown,
+  computeDailyTypeTrend,
+  computeTypeThroughput,
+  computeBurnup,
+  countStuckTickets,
   countCompletedSince,
 } from "@/lib/stats";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TrendChart } from "@/components/dashboard/trend-chart";
+import { BurnupChart } from "@/components/dashboard/burnup-chart";
 import { StatusDonut } from "@/components/dashboard/status-donut";
+import { TypeDonut } from "@/components/dashboard/type-donut";
+import { DailyTypeTrendChart } from "@/components/dashboard/daily-type-trend-chart";
+import { TypeThroughputChart } from "@/components/dashboard/type-throughput-chart";
+import { StuckTicketsList } from "@/components/dashboard/stuck-tickets-list";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
 import {
   Table,
@@ -23,9 +34,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, CircleDot, ListTodo, Timer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDot, ListTodo, Timer } from "lucide-react";
 import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
-import type { WorkPackage } from "@/lib/types";
+import { formatDateDDMMYYYY } from "@/lib/utils";
+import { getWorkPackageUrl } from "@/lib/openproject-links";
+import { useOpSettings } from "@/lib/use-op-settings";
+import type { Period } from "@/lib/types";
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -39,39 +53,70 @@ function monthsAgo(n: number) {
   return d;
 }
 
+const TREND_TITLES: Record<Period, string> = {
+  week: "Completed per week",
+  month: "Completed per month",
+  quarter: "Completed per quarter",
+};
+
+const BURNUP_TITLES: Record<Period, string> = {
+  week: "Task & Bug burnup (this week)",
+  month: "Task & Bug burnup (this month)",
+  quarter: "Task & Bug burnup (this quarter)",
+};
+
+const THROUGHPUT_TITLES: Record<Period, string> = {
+  week: "Created vs completed by type (this week)",
+  month: "Created vs completed by type (this month)",
+  quarter: "Created vs completed by type (this quarter)",
+};
+
 export default function DashboardPage() {
-  const { workPackages, loading, error, period, project } = useFilters();
-  const {
-    data: myWorkPackagesData,
-    loading: recentLoading,
-    error: recentError,
-  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages?mine=true");
+  const { allWorkPackages, workPackages, loading, error, period, project } = useFilters();
+  const { settings } = useOpSettings();
+  const statuses = useAppSelector((state) => state.common.statuses);
 
-  const completedThisWeek = useMemo(() => countCompletedSince(workPackages, daysAgo(7)), [workPackages]);
-  const completedThisMonth = useMemo(() => countCompletedSince(workPackages, monthsAgo(1)), [workPackages]);
-  const completedThisQuarter = useMemo(() => countCompletedSince(workPackages, monthsAgo(3)), [workPackages]);
-  const openCount = useMemo(() => workPackages.filter((wp) => wp.status !== "Closed").length, [workPackages]);
-
+  const completedThisWeek = useMemo(() => countCompletedSince(workPackages ?? [], daysAgo(7)), [workPackages]);
+  const completedThisMonth = useMemo(() => countCompletedSince(workPackages ?? [], monthsAgo(1)), [workPackages]);
+  const completedThisQuarter = useMemo(() => countCompletedSince(workPackages ?? [], monthsAgo(3)), [workPackages]);
+  const openCount = useMemo(() => (workPackages ?? []).filter((wp) => wp.status !== "Closed").length, [workPackages]);
   const trend = useMemo(() => {
     if (period === "week") return computeWeeklyTrend(workPackages, 12);
     if (period === "quarter") return computeQuarterlyTrend(workPackages, 4);
     return computeMonthlyTrend(workPackages, 6);
   }, [workPackages, period]);
 
-  const statusBreakdown = useMemo(() => computeStatusBreakdown(workPackages), [workPackages]);
+  const statusBreakdown = useMemo(
+    () => computeStatusBreakdown(workPackages, getStatusNames(statuses)),
+    [workPackages, statuses],
+  );
+
+  const typeBreakdown = useMemo(() => computeTypeBreakdown(workPackages), [workPackages]);
+  const dailyTypeTrend = useMemo(() => computeDailyTypeTrend(workPackages), [workPackages]);
+  const typeThroughput = useMemo(
+    () => computeTypeThroughput(workPackages, period),
+    [workPackages, period],
+  );
+  const stuckTickets = useMemo(() => countStuckTickets(workPackages), [workPackages]);
+  const burnup = useMemo(() => computeBurnup(workPackages, period), [workPackages, period]);
 
   const recentList = useMemo(
     () =>
-      (myWorkPackagesData?.workPackages ?? [])
+      allWorkPackages
         .filter((workPackage) => matchesProject(workPackage, project))
         .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period))
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, 8),
-    [myWorkPackagesData, project, period],
+        .slice(0, 7),
+    [allWorkPackages, project, period],
   );
 
-  const trendTitle =
-    period === "week" ? "Completed per week" : period === "quarter" ? "Completed per quarter" : "Completed per month";
+  function navigateToTicket(ticketId: number) {
+    window.open(getWorkPackageUrl(settings?.instanceUrl, ticketId), "_blank", "noopener,noreferrer");
+  }
+
+  const trendTitle = TREND_TITLES[period];
+  const throughputTitle = THROUGHPUT_TITLES[period];
+  const burnupTitle = BURNUP_TITLES[period];
 
   if (error) {
     return <p className="text-sm text-destructive">Failed to load data: {error}</p>;
@@ -79,15 +124,21 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-container flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)
+          Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)
         ) : (
           <>
             <StatCard title="Completed this week" value={completedThisWeek} icon={CheckCircle2} />
             <StatCard title="Completed this month" value={completedThisMonth} icon={CheckCircle2} />
             <StatCard title="Completed this quarter" value={completedThisQuarter} icon={Timer} />
             <StatCard title="Open tickets" value={openCount} icon={CircleDot} />
+            <StatCard
+              title="Stuck tickets"
+              value={stuckTickets.length}
+              icon={AlertTriangle}
+              className={stuckTickets.length > 0 ? "border-amber-300 dark:border-amber-800" : undefined}
+            />
           </>
         )}
       </div>
@@ -99,19 +150,43 @@ export default function DashboardPage() {
         <div>{loading ? <Skeleton className="h-80 w-full" /> : <StatusDonut data={statusBreakdown} />}</div>
       </div>
 
+      <div>{loading ? <Skeleton className="h-80 w-full" /> : <BurnupChart title={burnupTitle} data={burnup} />}</div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div>{loading ? <Skeleton className="h-80 w-full" /> : <TypeDonut data={typeBreakdown} />}</div>
+        <div className="lg:col-span-2">
+          {loading ? <Skeleton className="h-80 w-full" /> : <DailyTypeTrendChart data={dailyTypeTrend} />}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {loading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : (
+            <TypeThroughputChart title={throughputTitle} data={typeThroughput} />
+          )}
+        </div>
+        <div>
+          {loading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : (
+            <StuckTicketsList tickets={stuckTickets} onSelect={navigateToTicket} />
+          )}
+        </div>
+      </div>
+
       <div className="rounded-lg border recent-tickets-container">
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <ListTodo className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-medium">My recent tickets</h2>
         </div>
-        {recentLoading ? (
+        {loading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-        ) : recentError ? (
-          <p className="p-4 text-sm text-destructive">{recentError}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -121,7 +196,8 @@ export default function DashboardPage() {
                 <TableHead>Priority</TableHead>
                 <TableHead>Project</TableHead>
                 <TableHead>Assignee</TableHead>
-                <TableHead className="text-right">Updated</TableHead>
+                <TableHead className="text-right">Release Dev</TableHead>
+                <TableHead className="text-right">Due Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -133,10 +209,19 @@ export default function DashboardPage() {
                 </TableRow>
               ) : (
                 recentList.map((wp) => (
-                  <TableRow key={wp.id}>
+                  <TableRow key={wp.id}
+                    className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => navigateToTicket(wp.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        navigateToTicket(wp.id);
+                      }
+                    }}
+                  >
                     <TableCell className="font-medium">{wp.subject}</TableCell>
                     <TableCell>
-                      <StatusBadge status={wp.status} />
+                      <StatusBadge status={wp.statusLabel ?? wp.status} />
                     </TableCell>
                     <TableCell>
                       <PriorityBadge priority={wp.priority} />
@@ -144,7 +229,10 @@ export default function DashboardPage() {
                     <TableCell className="text-muted-foreground">{wp.project}</TableCell>
                     <TableCell className="text-muted-foreground">{wp.assignee}</TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {new Date(wp.updatedAt).toLocaleDateString()}
+                      {formatDateDDMMYYYY(wp.customField25)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatDateDDMMYYYY(wp.dueDate)}
                     </TableCell>
                   </TableRow>
                 ))

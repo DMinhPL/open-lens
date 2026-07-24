@@ -6,6 +6,7 @@ import type {
   WorkPackagePriority,
   OpenProjectUser,
   OpenProjectProjectSummary,
+  OpenProjectStatus,
 } from "@/lib/types";
 
 export const INSTANCE_URL_COOKIE = "op_instance_url";
@@ -59,6 +60,8 @@ interface RawOpenProjectWorkPackage {
   createdAt: string;
   updatedAt: string;
   startDate?: string | null;
+  dueDate?: string | null;
+  customField25?: string | null;
   derivedDueDate?: string | null;
   spentTime?: string | null;
   _links: {
@@ -143,8 +146,10 @@ function mapWorkPackage(raw: RawOpenProjectWorkPackage): WorkPackage {
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     closedAt: status === "Closed" ? raw.updatedAt : undefined,
-    startDate: raw.startDate ?? undefined,
-    derivedDueDate: raw.derivedDueDate ?? undefined,
+    startDate: raw.startDate ?? '',
+    derivedDueDate: raw.derivedDueDate ?? '',
+    dueDate: raw.dueDate ?? '',
+    customField25: raw.customField25 ?? '',
     percentDone: raw.percentageDone ?? 0,
     spentHours: durationToHours(raw.spentTime),
   };
@@ -269,7 +274,7 @@ export async function getWorkPackagesForCurrentUser(): Promise<WorkPackage[]> {
   );
   return fetchFromOpenProject(settings.instanceUrl, settings.apiToken, [
     {
-      assigned_to: {
+      assignee: {
         operator: "=",
         values: [String(currentUser.id)],
       },
@@ -336,4 +341,48 @@ export async function getProjectsForUser(userId: number): Promise<OpenProjectPro
     `/api/v3/projects?filters=${filters}&pageSize=200`,
   );
   return (json._embedded?.elements ?? []).map(mapProject);
+}
+
+interface RawOpenProjectStatus {
+  id: number;
+  name: string;
+  isClosed: boolean;
+  color: string | null;
+  isDefault: boolean;
+  position: number;
+}
+
+function mapOpenProjectStatus(raw: RawOpenProjectStatus): OpenProjectStatus {
+  return {
+    id: raw.id,
+    name: raw.name,
+    isClosed: raw.isClosed,
+    color: raw.color,
+    isDefault: raw.isDefault,
+    position: raw.position,
+  };
+}
+
+const DUMMY_STATUSES: OpenProjectStatus[] = [
+  { id: 1, name: "New", isClosed: false, color: "#3997AD", isDefault: true, position: 1 },
+  { id: 2, name: "In progress", isClosed: false, color: "#3852C6", isDefault: false, position: 2 },
+  { id: 3, name: "On hold", isClosed: false, color: "#A96FFE", isDefault: false, position: 3 },
+  { id: 4, name: "Closed", isClosed: true, color: "#DF6DA1", isDefault: false, position: 4 },
+  { id: 5, name: "Rejected", isClosed: true, color: "#D32937", isDefault: false, position: 5 },
+];
+
+/** Returns all work package statuses configured on the OpenProject instance. */
+export async function getStatuses(): Promise<OpenProjectStatus[]> {
+  const settings = await getOpSettings();
+
+  if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
+    return DUMMY_STATUSES;
+  }
+
+  const json = await openProjectGet<HalCollection<RawOpenProjectStatus>>(
+    settings.instanceUrl,
+    settings.apiToken,
+    "/api/v3/statuses",
+  );
+  return (json._embedded?.elements ?? []).map(mapOpenProjectStatus);
 }

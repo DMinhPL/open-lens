@@ -14,85 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { useOpSettings } from "@/lib/use-op-settings";
-import { useApiQuery } from "@/lib/api/use-api-query";
 import { getWorkPackageUrl } from "@/lib/openproject-links";
 import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
-import type { WorkPackage } from "@/lib/types";
-
-const TYPE_BADGE_STYLES: Record<string, string> = {
-  task: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  bug: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300",
-  "user story":
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
-  story:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
-  feature:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  epic: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300",
-  milestone:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  phase: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300",
-  risk: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300",
-};
-
-const TYPE_FALLBACK_STYLES = [
-  "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-  "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300",
-  "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
-  "border-lime-200 bg-lime-50 text-lime-700 dark:border-lime-800 dark:bg-lime-950 dark:text-lime-300",
-];
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  new: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  "in progress":
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  "in specification":
-    "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300",
-  resolved:
-    "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300",
-  closed:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  "on hold":
-    "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300",
-  rejected:
-    "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300",
-  scheduled:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
-  confirmed:
-    "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
-};
-
-const STATUS_FALLBACK_STYLES = [
-  "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-  "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300",
-  "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
-  "border-lime-200 bg-lime-50 text-lime-700 dark:border-lime-800 dark:bg-lime-950 dark:text-lime-300",
-];
-
-function getTypeBadgeStyle(type: string) {
-  const normalized = type.trim().toLowerCase().replace(/[_-]+/g, " ");
-  const knownStyle = TYPE_BADGE_STYLES[normalized];
-  if (knownStyle) return knownStyle;
-
-  const hash = Array.from(normalized).reduce((total, character) => total + character.charCodeAt(0), 0);
-  return TYPE_FALLBACK_STYLES[hash % TYPE_FALLBACK_STYLES.length];
-}
-
-function getStatusBadgeStyle(status: string) {
-  const normalized = status.trim().toLowerCase().replace(/[_-]+/g, " ");
-  const knownStyle = STATUS_BADGE_STYLES[normalized];
-  if (knownStyle) return knownStyle;
-
-  const hash = Array.from(normalized).reduce((total, character) => total + character.charCodeAt(0), 0);
-  return STATUS_FALLBACK_STYLES[hash % STATUS_FALLBACK_STYLES.length];
-}
-
-function formatDate(value?: string) {
-  if (!value) return "—";
-  const date = new Date(value.includes("T") ? value : `${value}T00:00:00Z`);
-  return date.toLocaleDateString(undefined, { timeZone: "UTC" });
-}
+import { formatDateDDMMYYYY } from "@/lib/utils";
+import { getTypeBadgeStyle } from "@/lib/type-colors";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString(undefined, {
@@ -114,12 +41,8 @@ function formatHours(hours?: number) {
 }
 
 export default function TicketsPage() {
-  const { project, period } = useFilters();
+  const { allWorkPackages: workPackages, loading, error, project, period } = useFilters();
   const { settings } = useOpSettings();
-  const { data, loading, error } = useApiQuery<{ workPackages: WorkPackage[] }>(
-    "/api/openproject/work-packages?mine=true",
-  );
-  const workPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
   const [priority, setPriority] = useState<string>("all");
@@ -137,7 +60,7 @@ export default function TicketsPage() {
     return workPackages
       .filter((wp) => matchesProject(wp, project))
       .filter((wp) => wasCreatedInPeriod(wp.createdAt, period))
-      .filter((wp) => (status === "all" ? true : (wp.statusLabel ?? wp.status) === status))
+      .filter((wp) => (status === "all" ? true : wp.statusLabel === status))
       .filter((wp) => (priority === "all" ? true : (wp.priorityLabel ?? wp.priority) === priority))
       .filter((wp) => wp.subject.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -202,6 +125,7 @@ export default function TicketsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16 text-right">Order</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
@@ -211,6 +135,7 @@ export default function TicketsPage() {
                 <TableHead>Project</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Start date</TableHead>
+                <TableHead>Release Dev</TableHead>
                 <TableHead>Due date</TableHead>
                 <TableHead className="text-right">Logged time</TableHead>
               </TableRow>
@@ -218,12 +143,12 @@ export default function TicketsPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground">
                     No tickets assigned to you match the current filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((wp) => (
+                filtered.map((wp, index) => (
                   <TableRow
                     key={wp.id}
                     role="link"
@@ -238,6 +163,7 @@ export default function TicketsPage() {
                       }
                     }}
                   >
+                    <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
                     <TableCell className="max-w-80 font-medium">
                       <span className="block truncate" title={wp.subject}>
                         {wp.subject}
@@ -250,13 +176,7 @@ export default function TicketsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={getStatusBadgeStyle(wp.statusLabel ?? wp.status)}
-                      >
-                        <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
-                        {wp.statusLabel ?? wp.status}
-                      </Badge>
+                      <StatusBadge status={wp.statusLabel ?? wp.status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">{wp.author}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDateTime(wp.createdAt)}</TableCell>
@@ -275,8 +195,9 @@ export default function TicketsPage() {
                         <span className="w-9 text-right text-muted-foreground">{wp.percentDone}%</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(wp.startDate)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(wp.derivedDueDate)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.startDate)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.customField25)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.dueDate)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatHours(wp.spentHours)}
                     </TableCell>

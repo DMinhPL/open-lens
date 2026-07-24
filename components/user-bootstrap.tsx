@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { fetchCurrentUser, fetchUserProjects } from "@/lib/store/userSlice";
+import { fetchStatuses } from "@/lib/store/commonSlice";
 
 /**
  * Loads the current OpenProject user (and their project memberships) into Redux
@@ -12,6 +13,7 @@ import { fetchCurrentUser, fetchUserProjects } from "@/lib/store/userSlice";
 export function UserBootstrap() {
   const dispatch = useAppDispatch();
   const { info: currentUser, infoStatus, projectsStatus } = useAppSelector((state) => state.user);
+  const { statusesStatus } = useAppSelector((state) => state.common);
 
   useEffect(() => {
     if (infoStatus === "idle") {
@@ -24,6 +26,12 @@ export function UserBootstrap() {
       dispatch(fetchUserProjects(currentUser.id));
     }
   }, [currentUser, projectsStatus, dispatch]);
+
+  useEffect(() => {
+    if (statusesStatus === "idle") {
+      dispatch(fetchStatuses());
+    }
+  }, [statusesStatus, dispatch]);
 
   return null;
 }
