@@ -1,5 +1,5 @@
 /** Fallback OpenProject instance used to build links when no instance URL is configured yet (e.g. dummy-data mode). */
-export const DEFAULT_OPENPROJECT_URL = "https://proj.mecury.com.vn";
+export const DEFAULT_OPENPROJECT_URL = process.env.NEXT_PUBLIC_API_URL || "https://proj.mecury.com.vn";
 
 /** Builds the URL to a project's page on the actual OpenProject instance. */
 export function getProjectUrl(instanceUrl: string | null | undefined, identifier: string): string {
