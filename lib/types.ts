@@ -1,12 +1,8 @@
 export type WorkPackageStatus =
   | "New"
-  | "In Progress"
-  | "Resolved"
-  | "Closed"
-  | "Developed"
-  | "Open"
-  | "Done"
-  | "Cancelled";
+  | "In progress"
+  | "On hold"
+  | "Closed";
 export type WorkPackagePriority = "Low" | "Normal" | "High" | "Immediate";
 
 export interface WorkPackage {
@@ -67,6 +63,14 @@ export interface BurnupPoint {
   date: string; // ISO date, start of day (UTC)
   completed: number; // cumulative Task/Bug tickets done as of this day
   total: number; // cumulative Task/Bug tickets in scope (created) as of this day
+}
+
+export interface CfdPoint {
+  label: string; // e.g. "7/24"
+  date: string; // ISO date, start of day (UTC)
+  backlog: number; // cumulative Task/Bug tickets not yet started
+  inProgress: number; // cumulative Task/Bug tickets in progress or on hold
+  done: number; // cumulative Task/Bug tickets completed as of this day
 }
 
 export interface WorkloadEntry {

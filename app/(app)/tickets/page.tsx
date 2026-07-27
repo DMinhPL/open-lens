@@ -17,8 +17,15 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/status-badge";
 import { useOpSettings } from "@/lib/use-op-settings";
 import { getWorkPackageUrl } from "@/lib/openproject-links";
-import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
-import { formatDateDDMMYYYY } from "@/lib/utils";
+import {
+  matchesProject,
+  wasCreatedInPeriod,
+  getReleaseDevUrgency,
+  getReleaseDevRowClassName,
+  getReleaseDevCellClassName,
+  getReleaseDevUrgencyLabel,
+} from "@/lib/work-package-filters";
+import { formatDateDDMMYYYY, cn } from "@/lib/utils";
 import { getTypeBadgeStyle } from "@/lib/type-colors";
 
 function formatDateTime(value: string) {
@@ -148,61 +155,72 @@ export default function TicketsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((wp, index) => (
-                  <TableRow
-                    key={wp.id}
-                    role="link"
-                    tabIndex={0}
-                    aria-label={`Open ticket ${wp.subject} in OpenProject`}
-                    className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => navigateToTicket(wp.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        navigateToTicket(wp.id);
-                      }
-                    }}
-                  >
-                    <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
-                    <TableCell className="max-w-80 font-medium">
-                      <span className="block truncate" title={wp.subject}>
-                        {wp.subject}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getTypeBadgeStyle(wp.type)}>
-                        <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
-                        {wp.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={wp.statusLabel ?? wp.status} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{wp.author}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateTime(wp.createdAt)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{wp.priorityLabel ?? wp.priority}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{wp.project}</TableCell>
-                    <TableCell>
-                      <div className="flex min-w-28 items-center gap-2">
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${Math.min(100, Math.max(0, wp.percentDone))}%` }}
-                          />
+                filtered.map((wp, index) => {
+                  const releaseDevUrgency = getReleaseDevUrgency(wp);
+
+                  return (
+                    <TableRow
+                      key={wp.id}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Open ticket ${wp.subject} in OpenProject${getReleaseDevUrgencyLabel(releaseDevUrgency)}`}
+                      className={cn(
+                        "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        getReleaseDevRowClassName(releaseDevUrgency),
+                      )}
+                      onClick={() => navigateToTicket(wp.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigateToTicket(wp.id);
+                        }
+                      }}
+                    >
+                      <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell className="max-w-80 font-medium">
+                        <span className="block truncate" title={wp.subject}>
+                          {wp.subject}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getTypeBadgeStyle(wp.type)}>
+                          <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
+                          {wp.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={wp.statusLabel ?? wp.status} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{wp.author}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateTime(wp.createdAt)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{wp.priorityLabel ?? wp.priority}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{wp.project}</TableCell>
+                      <TableCell>
+                        <div className="flex min-w-28 items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.min(100, Math.max(0, wp.percentDone))}%` }}
+                            />
+                          </div>
+                          <span className="w-9 text-right text-muted-foreground">{wp.percentDone}%</span>
                         </div>
-                        <span className="w-9 text-right text-muted-foreground">{wp.percentDone}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.startDate)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.customField25)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.dueDate)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatHours(wp.spentHours)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.startDate)}</TableCell>
+                      <TableCell
+                        className={cn("text-muted-foreground", getReleaseDevCellClassName(releaseDevUrgency))}
+                      >
+                        {formatDateDDMMYYYY(wp.customField25)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.dueDate)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatHours(wp.spentHours)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

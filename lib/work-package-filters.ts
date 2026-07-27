@@ -1,5 +1,40 @@
 import type { Period, WorkPackage } from "@/lib/types";
 
+export type ReleaseDevUrgency = "overdue" | "soon" | null;
+
+const RELEASE_DEV_WARNING_DAYS = Number(process.env.NEXT_PUBLIC_RELEASE_DEV_WARNING_DAYS) || 2;
+
+/** Flags a ticket whose Release Dev date (customField25) is overdue or within the warning window, unless it's already done. */
+export function getReleaseDevUrgency(workPackage: WorkPackage, now = new Date()): ReleaseDevUrgency {
+  if (!workPackage.customField25 || workPackage.percentDone >= 100) return null;
+
+  const deadline = new Date(`${workPackage.customField25}T00:00:00Z`);
+  if (Number.isNaN(deadline.getTime())) return null;
+
+  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysUntil = Math.round((deadline.getTime() - todayUtc) / (1000 * 60 * 60 * 24));
+
+  if (daysUntil < 0) return "overdue";
+  if (daysUntil <= RELEASE_DEV_WARNING_DAYS) return "soon";
+  return null;
+}
+
+export function getReleaseDevRowClassName(urgency: ReleaseDevUrgency) {
+  if (urgency === "overdue") return "bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-950/70";
+  if (urgency === "soon") return "bg-red-300 hover:bg-red-200 dark:bg-red-950/80 dark:hover:bg-red-950/70";
+  return undefined;
+}
+
+export function getReleaseDevCellClassName(urgency: ReleaseDevUrgency) {
+  return urgency ? "font-semibold text-red-700 dark:text-red-400" : undefined;
+}
+
+export function getReleaseDevUrgencyLabel(urgency: ReleaseDevUrgency) {
+  if (urgency === "overdue") return " — Release Dev date overdue";
+  if (urgency === "soon") return " — Release Dev date approaching";
+  return "";
+}
+
 export function matchesProject(workPackage: WorkPackage, selectedProject: string) {
   if (selectedProject === "all") return true;
 

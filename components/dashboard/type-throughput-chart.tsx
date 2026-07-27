@@ -4,7 +4,7 @@ import "@/lib/chart-setup";
 import { Bar } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/lib/use-chart-colors";
-import { CATEGORICAL } from "@/lib/chart-theme";
+import { CHART_COLORS } from "@/lib/chart-theme";
 import type { TypeThroughput } from "@/lib/types";
 
 interface TypeThroughputChartProps {
@@ -21,14 +21,14 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
       {
         label: "Created",
         data: data.map((d) => d.created),
-        backgroundColor: CATEGORICAL.blue,
+        backgroundColor: CHART_COLORS.blue,
         borderRadius: 4,
         maxBarThickness: 32,
       },
       {
         label: "Completed",
         data: data.map((d) => d.completed),
-        backgroundColor: CATEGORICAL.aqua,
+        backgroundColor: CHART_COLORS.aqua,
         borderRadius: 4,
         maxBarThickness: 32,
       },
@@ -43,14 +43,7 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
         position: "bottom" as const,
         labels: { color: ink.text, boxWidth: 12, font: { size: 11 } },
       },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
     scales: {
       x: {

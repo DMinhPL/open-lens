@@ -42,14 +42,7 @@ export function DailyTypeTrendChart({ data }: DailyTypeTrendChartProps) {
         position: "bottom" as const,
         labels: { color: ink.text, boxWidth: 12, font: { size: 11 } },
       },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
     scales: {
       x: {

@@ -1,4 +1,4 @@
-import { CATEGORICAL } from "@/lib/chart-theme";
+import { CHART_CATEGORICAL, CHART_COLORS } from "@/lib/chart-theme";
 
 /** Tailwind badge styles for known work package types (used by the Tickets table and dashboard). */
 export const TYPE_BADGE_STYLES: Record<string, string> = {
@@ -43,18 +43,18 @@ export function getTypeBadgeStyle(type: string): string {
 
 /** Hex colors for known work package types, used by chart components (donut/bar). */
 export const TYPE_COLOR_HEX: Record<string, string> = {
-  task: CATEGORICAL.blue,
-  bug: CATEGORICAL.red,
-  "user story": CATEGORICAL.yellow,
-  story: CATEGORICAL.yellow,
-  feature: CATEGORICAL.aqua,
-  epic: CATEGORICAL.violet,
-  milestone: CATEGORICAL.orange,
-  phase: CATEGORICAL.green,
-  risk: CATEGORICAL.magenta,
+  task: CHART_COLORS.blue,
+  bug: CHART_COLORS.red,
+  "user story": CHART_COLORS.yellow,
+  story: CHART_COLORS.yellow,
+  feature: CHART_COLORS.aqua,
+  epic: CHART_COLORS.purple,
+  milestone: CHART_COLORS.orange,
+  phase: CHART_COLORS.green,
+  risk: CHART_COLORS.pink,
 };
 
-const CHART_FALLBACK_COLORS = Object.values(CATEGORICAL);
+const CHART_FALLBACK_COLORS = CHART_CATEGORICAL;
 
 /** Hex color for a work package type, falling back to a hashed color for unknown types. */
 export function getTypeColor(type: string): string {

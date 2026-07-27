@@ -4,7 +4,7 @@ import "@/lib/chart-setup";
 import { Line } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/lib/use-chart-colors";
-import { CATEGORICAL } from "@/lib/chart-theme";
+import { CHART_COLORS } from "@/lib/chart-theme";
 import type { BurnupPoint } from "@/lib/types";
 
 interface BurnupChartProps {
@@ -14,7 +14,7 @@ interface BurnupChartProps {
 
 export function BurnupChart({ title, data }: BurnupChartProps) {
   const ink = useChartInk();
-  const scopeColor = ink.isDark ? "#9d8cf5" : '#e9d92c';
+  const scopeColor = CHART_COLORS.yellow;
 
   const chartData = {
     labels: data.map((d) => d.label),
@@ -32,9 +32,9 @@ export function BurnupChart({ title, data }: BurnupChartProps) {
       {
         label: "Completed",
         data: data.map((d) => d.completed),
-        borderColor: CATEGORICAL.aqua,
-        backgroundColor: `${CATEGORICAL.aqua}26`,
-        pointBackgroundColor: CATEGORICAL.aqua,
+        borderColor: CHART_COLORS.aqua,
+        backgroundColor: `${CHART_COLORS.aqua}26`,
+        pointBackgroundColor: CHART_COLORS.aqua,
         pointRadius: 2,
         borderWidth: 2,
         fill: true,
@@ -52,14 +52,7 @@ export function BurnupChart({ title, data }: BurnupChartProps) {
         position: "bottom" as const,
         labels: { color: ink.text, boxWidth: 12, font: { size: 11 } },
       },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
     scales: {
       x: {

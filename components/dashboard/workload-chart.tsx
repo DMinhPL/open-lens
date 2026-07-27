@@ -3,7 +3,7 @@
 import "@/lib/chart-setup";
 import { Bar } from "react-chartjs-2";
 import { useChartInk } from "@/lib/use-chart-colors";
-import { CATEGORICAL } from "@/lib/chart-theme";
+import { CHART_COLORS } from "@/lib/chart-theme";
 import type { WorkloadEntry } from "@/lib/types";
 
 interface WorkloadChartProps {
@@ -19,7 +19,7 @@ export function WorkloadChart({ data }: WorkloadChartProps) {
       {
         label: "Tasks",
         data: data.map((d) => d.count),
-        backgroundColor: CATEGORICAL.blue,
+        backgroundColor: CHART_COLORS.blue,
         borderRadius: 4,
         maxBarThickness: 36,
       },
@@ -32,14 +32,7 @@ export function WorkloadChart({ data }: WorkloadChartProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
     scales: {
       x: {

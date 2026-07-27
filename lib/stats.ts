@@ -1,5 +1,6 @@
 import type {
   BurnupPoint,
+  CfdPoint,
   DailyTypeTrendPoint,
   DashboardStats,
   Period,
@@ -246,6 +247,52 @@ export function computeBurnup(workPackages: WorkPackage[], period: Period): Burn
       date: dayStart.toISOString(),
       completed,
       total,
+    });
+  }
+
+  return points;
+}
+
+/**
+ * Cumulative flow series for Task/Bug tickets, sampled daily from the start of
+ * the selected period through today.
+ */
+export function computeCumulativeFlow(workPackages: WorkPackage[], period: Period): CfdPoint[] {
+  const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
+  console.log(relevant)
+  const now = new Date();
+  const start =
+    period === "week" ? startOfWeek(now) : period === "quarter" ? startOfQuarter(now) : startOfMonth(now);
+  const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const points: CfdPoint[] = [];
+  for (let i = 0; i < numDays; i++) {
+    const dayStart = addDays(start, i);
+    const dayEnd = addDays(dayStart, 1);
+    let backlog = 0;
+    let inProgress = 0;
+    let done = 0;
+
+    for (const wp of relevant) {
+      if (new Date(wp.createdAt) >= dayEnd) continue;
+
+      const completed =
+        isWorkPackageCompleted(wp) && new Date(wp.closedAt ?? wp.updatedAt) < dayEnd;
+      if (completed) {
+        done++;
+      } else if (wp.statusLabel === "In Progress" || wp.statusLabel === "On hold") {
+        inProgress++;
+      } else if (wp.statusLabel === "Open") {
+        backlog++;
+      }
+    }
+
+    points.push({
+      label: `${dayStart.getUTCMonth() + 1}/${dayStart.getUTCDate()}`,
+      date: dayStart.toISOString(),
+      backlog,
+      inProgress,
+      done,
     });
   }
 

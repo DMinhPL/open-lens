@@ -25,7 +25,7 @@ export function StatusDonut({ data }: StatusDonutProps) {
       {
         data: filtered.map((d) => d.count),
         backgroundColor: filtered.map((d) => getStatusColor(d.status, colorMap)),
-        borderColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
+        borderColor: ink.surface,
         borderWidth: 2,
       },
     ],
@@ -40,14 +40,7 @@ export function StatusDonut({ data }: StatusDonutProps) {
         position: "bottom" as const,
         labels: { color: ink.text, boxWidth: 12, font: { size: 12 } },
       },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
   };
 

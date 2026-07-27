@@ -30,10 +30,26 @@ export function useIsDarkMode(): boolean {
 
 export function useChartInk() {
   const isDark = useIsDarkMode();
+  // Charts intentionally use higher-contrast ink than the surrounding UI chrome.
+  const text = isDark ? "#c3c2b7" : "#52514e";
+  const grid = isDark ? "#2c2c2a" : "#e1e0d9";
+  const surface = isDark ? "#1a1a19" : "#fcfcfb";
+  const title = isDark ? "#ffffff" : "#0b0b0b";
+
   return {
     isDark,
-    text: isDark ? "#c3c2b7" : "#52514e",
-    grid: isDark ? "#2c2c2a" : "#e1e0d9",
+    text,
+    grid,
     baseline: isDark ? "#383835" : "#c3c2b7",
+    surface,
+    title,
+    tooltip: {
+      backgroundColor: surface,
+      titleColor: title,
+      bodyColor: text,
+      borderColor: grid,
+      borderWidth: 1,
+      padding: 8,
+    },
   };
 }

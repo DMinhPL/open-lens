@@ -4,7 +4,7 @@ import "@/lib/chart-setup";
 import { Line } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/lib/use-chart-colors";
-import { CATEGORICAL } from "@/lib/chart-theme";
+import { CHART_COLORS } from "@/lib/chart-theme";
 import type { TrendPoint } from "@/lib/types";
 
 interface TrendChartProps {
@@ -21,9 +21,9 @@ export function TrendChart({ title, data }: TrendChartProps) {
       {
         label: "Completed",
         data: data.map((d) => d.completed),
-        borderColor: CATEGORICAL.blue,
-        backgroundColor: `${CATEGORICAL.blue}26`,
-        pointBackgroundColor: CATEGORICAL.blue,
+        borderColor: CHART_COLORS.blue,
+        backgroundColor: `${CHART_COLORS.blue}26`,
+        pointBackgroundColor: CHART_COLORS.blue,
         pointRadius: 3,
         borderWidth: 2,
         fill: true,
@@ -37,14 +37,7 @@ export function TrendChart({ title, data }: TrendChartProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        backgroundColor: ink.isDark ? "#1a1a19" : "#fcfcfb",
-        titleColor: ink.isDark ? "#ffffff" : "#0b0b0b",
-        bodyColor: ink.isDark ? "#c3c2b7" : "#52514e",
-        borderColor: ink.grid,
-        borderWidth: 1,
-        padding: 8,
-      },
+      tooltip: ink.tooltip,
     },
     scales: {
       x: {

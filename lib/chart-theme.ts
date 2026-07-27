@@ -1,18 +1,35 @@
-export const CATEGORICAL = {
-  blue: "#2a78d6",
-  orange: "#eb6834",
-  aqua: "#1baf7a",
-  yellow: "#eda100",
-  magenta: "#e87ba4",
-  green: "#008300",
-  violet: "#4a3aa7",
-  red: "#e34948",
-};
+export const CHART_CATEGORICAL = [
+  "#1DBD8E",
+  "#2D3F54",
+  "#52647A",
+  "#73CC80",
+  "#004C94",
+  "#006ECF",
+  "#3C93FA",
+  "#00D4C6",
+  "#0FA69D",
+  "#028183",
+] as const;
 
-export const CHART_INK = {
-  primary: "#0b0b0b",
-  secondary: "#52514e",
-  muted: "#898781",
-  grid: "#e1e0d9",
-  baseline: "#c3c2b7",
-};
+export const CHART_ACCENT = {
+  red: "#F24F4F",
+  orange: "#FF8F5C",
+  yellow: "#EEB72B",
+  pink: "#FF57B0",
+  purple: "#9151B8",
+} as const;
+
+/** Semantic aliases keep chart intent readable while sourcing every value from the brand palette. */
+export const CHART_COLORS = {
+  aqua: CHART_CATEGORICAL[0],
+  navy: CHART_CATEGORICAL[1],
+  slate: CHART_CATEGORICAL[2],
+  green: CHART_CATEGORICAL[3],
+  darkBlue: CHART_CATEGORICAL[4],
+  blue: CHART_CATEGORICAL[5],
+  brightBlue: CHART_CATEGORICAL[6],
+  cyan: CHART_CATEGORICAL[7],
+  teal: CHART_CATEGORICAL[8],
+  darkTeal: CHART_CATEGORICAL[9],
+  ...CHART_ACCENT,
+} as const;

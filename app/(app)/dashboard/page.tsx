@@ -13,12 +13,14 @@ import {
   computeDailyTypeTrend,
   computeTypeThroughput,
   computeBurnup,
+  computeCumulativeFlow,
   countStuckTickets,
   countCompletedSince,
 } from "@/lib/stats";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TrendChart } from "@/components/dashboard/trend-chart";
 import { BurnupChart } from "@/components/dashboard/burnup-chart";
+import { CfdChart } from "@/components/dashboard/cfd-chart";
 import { StatusDonut } from "@/components/dashboard/status-donut";
 import { TypeDonut } from "@/components/dashboard/type-donut";
 import { DailyTypeTrendChart } from "@/components/dashboard/daily-type-trend-chart";
@@ -35,8 +37,15 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, CheckCircle2, CircleDot, ListTodo, Timer } from "lucide-react";
-import { matchesProject, wasCreatedInPeriod } from "@/lib/work-package-filters";
-import { formatDateDDMMYYYY } from "@/lib/utils";
+import {
+  matchesProject,
+  wasCreatedInPeriod,
+  getReleaseDevUrgency,
+  getReleaseDevRowClassName,
+  getReleaseDevCellClassName,
+  getReleaseDevUrgencyLabel,
+} from "@/lib/work-package-filters";
+import { formatDateDDMMYYYY, cn } from "@/lib/utils";
 import { getWorkPackageUrl } from "@/lib/openproject-links";
 import { useOpSettings } from "@/lib/use-op-settings";
 import type { Period } from "@/lib/types";
@@ -63,6 +72,12 @@ const BURNUP_TITLES: Record<Period, string> = {
   week: "Task & Bug burnup (this week)",
   month: "Task & Bug burnup (this month)",
   quarter: "Task & Bug burnup (this quarter)",
+};
+
+const CFD_TITLES: Record<Period, string> = {
+  week: "Cumulative flow (this week)",
+  month: "Cumulative flow (this month)",
+  quarter: "Cumulative flow (this quarter)",
 };
 
 const THROUGHPUT_TITLES: Record<Period, string> = {
@@ -99,6 +114,7 @@ export default function DashboardPage() {
   );
   const stuckTickets = useMemo(() => countStuckTickets(workPackages), [workPackages]);
   const burnup = useMemo(() => computeBurnup(workPackages, period), [workPackages, period]);
+  const cfd = useMemo(() => computeCumulativeFlow(workPackages, period), [workPackages, period]);
 
   const recentList = useMemo(
     () =>
@@ -117,6 +133,7 @@ export default function DashboardPage() {
   const trendTitle = TREND_TITLES[period];
   const throughputTitle = THROUGHPUT_TITLES[period];
   const burnupTitle = BURNUP_TITLES[period];
+  const cfdTitle = CFD_TITLES[period];
 
   if (error) {
     return <p className="text-sm text-destructive">Failed to load data: {error}</p>;
@@ -150,7 +167,12 @@ export default function DashboardPage() {
         <div>{loading ? <Skeleton className="h-80 w-full" /> : <StatusDonut data={statusBreakdown} />}</div>
       </div>
 
-      <div>{loading ? <Skeleton className="h-80 w-full" /> : <BurnupChart title={burnupTitle} data={burnup} />}</div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          {loading ? <Skeleton className="h-80 w-full" /> : <BurnupChart title={burnupTitle} data={burnup} />}
+        </div>
+        <div>{loading ? <Skeleton className="h-80 w-full" /> : <CfdChart title={cfdTitle} data={cfd} />}</div>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div>{loading ? <Skeleton className="h-80 w-full" /> : <TypeDonut data={typeBreakdown} />}</div>
@@ -208,34 +230,50 @@ export default function DashboardPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                recentList.map((wp) => (
-                  <TableRow key={wp.id}
-                    className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => navigateToTicket(wp.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        navigateToTicket(wp.id);
-                      }
-                    }}
-                  >
-                    <TableCell className="font-medium">{wp.subject}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={wp.statusLabel ?? wp.status} />
-                    </TableCell>
-                    <TableCell>
-                      <PriorityBadge priority={wp.priority} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{wp.project}</TableCell>
-                    <TableCell className="text-muted-foreground">{wp.assignee}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatDateDDMMYYYY(wp.customField25)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatDateDDMMYYYY(wp.dueDate)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                recentList.map((wp) => {
+                  const releaseDevUrgency = getReleaseDevUrgency(wp);
+
+                  return (
+                    <TableRow
+                      key={wp.id}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Open ticket ${wp.subject} in OpenProject${getReleaseDevUrgencyLabel(releaseDevUrgency)}`}
+                      className={cn(
+                        "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        getReleaseDevRowClassName(releaseDevUrgency),
+                      )}
+                      onClick={() => navigateToTicket(wp.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigateToTicket(wp.id);
+                        }
+                      }}
+                    >
+                      <TableCell className="font-medium">{wp.subject}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={wp.statusLabel ?? wp.status} />
+                      </TableCell>
+                      <TableCell>
+                        <PriorityBadge priority={wp.priority} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{wp.project}</TableCell>
+                      <TableCell className="text-muted-foreground">{wp.assignee}</TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right text-muted-foreground",
+                          getReleaseDevCellClassName(releaseDevUrgency),
+                        )}
+                      >
+                        {formatDateDDMMYYYY(wp.customField25)}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatDateDDMMYYYY(wp.dueDate)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
