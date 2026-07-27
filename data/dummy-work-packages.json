@@ -127,7 +127,8 @@
     "assignee": "Sofia Martinez",
     "createdAt": "2026-03-19T12:00:00.000Z",
     "updatedAt": "2026-03-31T12:00:00.000Z",
-    "percentDone": 32
+    "percentDone": 32,
+    "parentId": 1014
   },
   {
     "id": 1002,
@@ -162,7 +163,8 @@
     "createdAt": "2026-03-25T12:00:00.000Z",
     "updatedAt": "2026-05-28T12:00:00.000Z",
     "closedAt": "2026-05-28T12:00:00.000Z",
-    "percentDone": 100
+    "percentDone": 100,
+    "parentId": 1043
   },
   {
     "id": 1000,
@@ -265,7 +267,8 @@
     "createdAt": "2026-04-20T12:00:00.000Z",
     "updatedAt": "2026-06-14T12:00:00.000Z",
     "closedAt": "2026-06-14T12:00:00.000Z",
-    "percentDone": 100
+    "percentDone": 100,
+    "parentId": 1034
   },
   {
     "id": 1025,
@@ -288,7 +291,8 @@
     "assignee": "Alex Johnson",
     "createdAt": "2026-04-23T12:00:00.000Z",
     "updatedAt": "2026-05-09T12:00:00.000Z",
-    "percentDone": 61
+    "percentDone": 61,
+    "parentId": 1043
   },
   {
     "id": 1008,
@@ -596,7 +600,9 @@
     "assignee": "Marco Rossi",
     "createdAt": "2026-07-07T12:00:00.000Z",
     "updatedAt": "2026-07-22T12:00:00.000Z",
-    "percentDone": 8
+    "percentDone": 8,
+    "parentId": 1998,
+    "parentTitle": "Q3 platform performance epic"
   },
   {
     "id": 1033,
@@ -618,7 +624,8 @@
     "assignee": "Marco Rossi",
     "createdAt": "2026-07-13T12:00:00.000Z",
     "updatedAt": "2026-07-19T12:00:00.000Z",
-    "percentDone": 54
+    "percentDone": 54,
+    "parentId": 1014
   },
   {
     "id": 1045,

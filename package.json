@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.5",
     "@reduxjs/toolkit": "^2.12.0",
+    "@xyflow/react": "^12.9.3",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

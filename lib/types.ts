@@ -15,6 +15,8 @@ export interface WorkPackage {
   priorityLabel?: string; // exact priority title returned by OpenProject
   project: string;
   projectId?: number; // extracted from OpenProject's `_links.project.href`
+  parentId?: number; // extracted from OpenProject's `_links.parent.href`
+  parentTitle?: string; // OpenProject's `_links.parent.title`
   assignee: string;
   author: string;
   createdAt: string; // ISO date

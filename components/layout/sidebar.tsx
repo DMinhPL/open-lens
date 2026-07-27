@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/store/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tickets", label: "Tickets", icon: Ticket },
+  { href: "/hierarchy", label: "Hierarchy", icon: GitBranch },
   { href: "/workload", label: "Workload", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/settings", label: "Settings", icon: Settings },

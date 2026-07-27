@@ -259,12 +259,10 @@ export function computeBurnup(workPackages: WorkPackage[], period: Period): Burn
  */
 export function computeCumulativeFlow(workPackages: WorkPackage[], period: Period): CfdPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
-  console.log(relevant)
   const now = new Date();
   const start =
     period === "week" ? startOfWeek(now) : period === "quarter" ? startOfQuarter(now) : startOfMonth(now);
   const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
   const points: CfdPoint[] = [];
   for (let i = 0; i < numDays; i++) {
     const dayStart = addDays(start, i);

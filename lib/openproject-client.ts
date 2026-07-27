@@ -69,6 +69,7 @@ interface RawOpenProjectWorkPackage {
     status?: { title?: string };
     priority?: { title?: string };
     project?: { href?: string; title?: string };
+    parent?: { href?: string; title?: string };
     assignee?: { title?: string };
     author?: { title?: string };
   };
@@ -141,6 +142,8 @@ function mapWorkPackage(raw: RawOpenProjectWorkPackage): WorkPackage {
     priorityLabel: priorityLabel ?? mapPriority(priorityLabel),
     project: raw._links.project?.title ?? "Unknown",
     projectId: idFromHref(raw._links.project?.href),
+    parentId: idFromHref(raw._links.parent?.href),
+    parentTitle: raw._links.parent?.title,
     assignee: raw._links.assignee?.title ?? "Unassigned",
     author: raw._links.author?.title ?? "Unknown",
     createdAt: raw.createdAt,
@@ -183,6 +186,10 @@ function getDummyWorkPackages(): WorkPackage[] {
     new Set((dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => workPackage.project)),
   ).sort((a, b) => a.localeCompare(b));
 
+  const subjectById = new Map(
+    (dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => [workPackage.id, workPackage.subject]),
+  );
+
   return (dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => ({
     ...workPackage,
     projectId: workPackage.projectId ?? projectNames.indexOf(workPackage.project) + 1,
@@ -191,6 +198,9 @@ function getDummyWorkPackages(): WorkPackage[] {
     priorityLabel: workPackage.priorityLabel ?? workPackage.priority,
     author: workPackage.author ?? workPackage.assignee,
     spentHours: workPackage.spentHours ?? 0,
+    parentTitle: workPackage.parentId
+      ? workPackage.parentTitle ?? subjectById.get(workPackage.parentId) ?? "Unknown ticket"
+      : undefined,
   }));
 }
 
