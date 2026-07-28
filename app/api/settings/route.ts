@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getOpSettings, USE_DUMMY_COOKIE } from "@/lib/openproject-client";
-
-const ONE_YEAR = 60 * 60 * 24 * 365;
+import { buildOpCookieOptions, getOpSettings, USE_DUMMY_COOKIE } from "@/core/openproject/openproject-client";
 
 export async function GET() {
   const settings = await getOpSettings();
@@ -18,11 +16,7 @@ export async function PATCH(request: NextRequest) {
   const store = await cookies();
 
   if (typeof body.useDummyData === "boolean") {
-    store.set(USE_DUMMY_COOKIE, body.useDummyData ? "1" : "0", {
-      path: "/",
-      maxAge: ONE_YEAR,
-      sameSite: "lax",
-    });
+    store.set(USE_DUMMY_COOKIE, body.useDummyData ? "1" : "0", buildOpCookieOptions({ httpOnly: false }));
   }
 
   return NextResponse.json({ ok: true });

@@ -3,9 +3,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppSelector } from "@/lib/store/hooks";
-import { useOpSettings } from "@/lib/use-op-settings";
-import { getProjectUrl } from "@/lib/openproject-links";
+import { useAppSelector } from "@/core/store/hooks";
+import { useOpSettings } from "@/core/openproject/use-op-settings";
+import { getProjectUrl } from "@/core/openproject/openproject-links";
 import { ExternalLink, FolderKanban } from "lucide-react";
 
 export default function ProjectsPage() {

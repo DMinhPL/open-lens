@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { FiltersProvider } from "@/lib/filters-context";
+import { FiltersProvider } from "@/core/filters-context";
 import { UserBootstrap } from "@/components/user-bootstrap";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

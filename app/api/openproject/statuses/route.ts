@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStatuses } from "@/lib/openproject-client";
+import { getStatuses } from "@/core/openproject/openproject-client";
 
 export async function GET() {
   try {

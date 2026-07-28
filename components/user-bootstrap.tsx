@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
-import { fetchCurrentUser, fetchUserProjects } from "@/lib/store/userSlice";
-import { fetchStatuses } from "@/lib/store/commonSlice";
+import { useAppDispatch, useAppSelector } from "@/core/store/hooks";
+import { fetchCurrentUser, fetchUserProjects } from "@/core/store/userSlice";
+import { fetchStatuses } from "@/core/store/commonSlice";
 
 /**
  * Loads the current OpenProject user (and their project memberships) into Redux

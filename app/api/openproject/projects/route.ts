@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProjectsForUser } from "@/lib/openproject-client";
+import { getProjectsForUser } from "@/core/openproject/openproject-client";
 
 export async function GET(request: NextRequest) {
   const principal = request.nextUrl.searchParams.get("principal");

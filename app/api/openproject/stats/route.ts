@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getWorkPackages } from "@/lib/openproject-client";
-import { computeDashboardStats } from "@/lib/stats";
+import { getWorkPackages } from "@/core/openproject/openproject-client";
+import { computeDashboardStats } from "@/core/domain/stats";
 
 export async function GET() {
   try {

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/store/hooks";
+import { cn } from "@/core/utils";
+import { useAppSelector } from "@/core/store/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch } from "lucide-react";
 

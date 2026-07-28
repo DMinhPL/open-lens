@@ -1,9 +1,9 @@
 "use client";
 
-import { useFilters } from "@/lib/filters-context";
+import { useFilters } from "@/core/filters-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import type { Period } from "@/lib/types";
+import type { Period } from "@/core/domain/types";
 
 export function Topbar() {
   const { projects, project, setProject, period, setPeriod, loading } = useFilters();

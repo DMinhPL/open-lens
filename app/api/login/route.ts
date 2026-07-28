@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_TOKEN_COOKIE, INSTANCE_URL_COOKIE, USE_DUMMY_COOKIE } from "@/lib/openproject-client";
-
-const ONE_YEAR = 60 * 60 * 24 * 365;
+import {
+  API_TOKEN_COOKIE,
+  INSTANCE_URL_COOKIE,
+  USE_DUMMY_COOKIE,
+  buildOpCookieOptions,
+} from "@/core/openproject/openproject-client";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -13,17 +16,11 @@ export async function POST(request: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true });
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: ONE_YEAR,
-  };
+  const cookieOptions = buildOpCookieOptions();
 
   res.cookies.set(INSTANCE_URL_COOKIE, instanceUrl, cookieOptions);
   res.cookies.set(API_TOKEN_COOKIE, apiToken, cookieOptions);
-  res.cookies.set(USE_DUMMY_COOKIE, "0", { ...cookieOptions, httpOnly: false });
+  res.cookies.set(USE_DUMMY_COOKIE, "0", buildOpCookieOptions({ httpOnly: false }));
 
   return res;
 }

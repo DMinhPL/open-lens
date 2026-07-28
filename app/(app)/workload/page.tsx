@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useFilters } from "@/lib/filters-context";
-import { computeWorkload } from "@/lib/stats";
+import { useFilters } from "@/core/filters-context";
+import { computeWorkload } from "@/core/domain/stats";
 import { WorkloadChart } from "@/components/dashboard/workload-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { WorkloadGroupBy } from "@/lib/types";
+import type { WorkloadGroupBy } from "@/core/domain/types";
 
 const GROUP_OPTIONS: { value: WorkloadGroupBy; label: string }[] = [
   { value: "assignee", label: "Assignee" },

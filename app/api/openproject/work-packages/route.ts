@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWorkPackages, getWorkPackagesForCurrentUser } from "@/lib/openproject-client";
+import { getWorkPackages, getWorkPackagesForCurrentUser } from "@/core/openproject/openproject-client";
+import { filterWorkPackagesByQuery } from "@/core/domain/work-package-filters";
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,17 +8,11 @@ export async function GET(request: NextRequest) {
     const workPackages =
       params.get("mine") === "true" ? await getWorkPackagesForCurrentUser() : await getWorkPackages();
 
-    const status = params.get("status");
-    const priority = params.get("priority");
-    const project = params.get("project");
-    const assignee = params.get("assignee");
-
-    const filtered = workPackages.filter((wp) => {
-      if (status && wp.status !== status) return false;
-      if (priority && wp.priority !== priority) return false;
-      if (project && wp.project !== project) return false;
-      if (assignee && wp.assignee !== assignee) return false;
-      return true;
+    const filtered = filterWorkPackagesByQuery(workPackages, {
+      status: params.get("status"),
+      priority: params.get("priority"),
+      project: params.get("project"),
+      assignee: params.get("assignee"),
     });
 
     return NextResponse.json({ workPackages: filtered });

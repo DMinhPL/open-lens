@@ -1,10 +1,10 @@
 "use client";
 
-import "@/lib/chart-setup";
+import "@/core/colors/chart-setup";
 import { Bar } from "react-chartjs-2";
-import { useChartInk } from "@/lib/use-chart-colors";
-import { CHART_COLORS } from "@/lib/chart-theme";
-import type { WorkloadEntry } from "@/lib/types";
+import { useChartInk } from "@/core/colors/use-chart-colors";
+import { CHART_COLORS } from "@/core/colors/chart-theme";
+import type { WorkloadEntry } from "@/core/domain/types";
 
 interface WorkloadChartProps {
   data: WorkloadEntry[];

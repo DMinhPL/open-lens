@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/openproject-client";
+import { getCurrentUser } from "@/core/openproject/openproject-client";
 
 export async function GET() {
   try {
