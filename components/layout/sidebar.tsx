@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/core/utils";
 import { useAppSelector } from "@/core/store/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch, Workflow } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/hierarchy", label: "Hierarchy", icon: GitBranch },
   { href: "/workload", label: "Workload", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/workflow-instructions", label: "Meeting → Tasks", icon: Workflow },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

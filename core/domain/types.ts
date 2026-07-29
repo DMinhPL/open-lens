@@ -140,3 +140,19 @@ export interface OpenProjectStatus {
   position: number;
   legacy_id?: number;
 }
+
+/** Result of submitting a workflow instruction to the configured Make.com webhook. */
+export interface WorkflowInstructionSubmission {
+  ok: boolean;
+  status: number; // HTTP status returned by the Make.com webhook
+  jobId: string; // correlates this submission with its `/callback` completion signal
+}
+
+/** Lifecycle of a workflow-instruction job, tracked until the Make.com scenario calls `/callback`. */
+export type WorkflowInstructionJobStatus = "pending" | "completed" | "error";
+
+/** Polled shape of `GET /api/workflow-instructions/callback?jobId=...`. */
+export interface WorkflowInstructionJobState {
+  status: WorkflowInstructionJobStatus;
+  message?: string;
+}
