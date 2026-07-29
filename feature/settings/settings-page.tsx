@@ -68,19 +68,7 @@ export default function SettingsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the controlled input once the saved webhook URL loads
     setWebhookUrlInput(make.webhookUrl);
-  }, [make]);
-
-  useEffect(() => {
-    // The OpenProject token gates the workflow-instructions module: once it's gone, the
-    // end-user's Make.com credentials shouldn't outlive it either, so clear them alongside it.
-    if (settings && !settings.hasCredentials && make.hasCredentials) {
-      make.clear();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the controlled input alongside the credentials it mirrors
-      setApiKeyInput("");
-      toast.info("OpenProject connection cleared — Make.com credentials were cleared too");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-check when the OpenProject connection state changes
-  }, [settings]);
+  }, [make.webhookUrl]);
 
   async function handleSaveToken(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
