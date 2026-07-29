@@ -1,4 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# open-lens
+
+open-lens is a project/ticket intelligence dashboard for [OpenProject](https://www.openproject.org/), built with [Next.js](https://nextjs.org). It surfaces burnup, throughput, workload, and hierarchy views over OpenProject work packages so teams can track delivery health without living inside the ticket tracker.
+
+## Features
+
+- **Dashboard** — burnup, ticket-type throughput, and stuck-ticket charts (Chart.js / Recharts)
+- **Tickets** — work package listing and filtering
+- **Hierarchy** — work package tree/graph visualization (`@xyflow/react` + `dagre`)
+- **Workload** — team/assignee load view
+- **Projects** — OpenProject project overview
+- **Settings** — app configuration
 
 ## Getting Started
 
@@ -6,31 +17,27 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app talks to an OpenProject instance via `core/openproject/openproject-client.ts`. Relevant environment variables:
 
-## Learn More
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `NEXT_PUBLIC_API_URL` | Base URL of the OpenProject instance | `https://proj.mecury.com.vn` |
+| `USE_DUMMY_DATA` | Set to `"false"` to use live OpenProject data instead of dummy data | dummy data outside production |
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Next.js 16 (App Router) + React 19
+- Redux Toolkit / React Redux for state
+- Tailwind CSS 4 + Radix UI + shadcn primitives
+- Chart.js / react-chartjs-2 and Recharts for visualizations
+- `@xyflow/react` + `@dagrejs/dagre` for the hierarchy graph
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Code Intelligence
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repo is indexed by [GitNexus](https://github.com/) — see [AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md) for how to use impact analysis, execution-flow queries, and safe refactoring tools when working in this codebase.
