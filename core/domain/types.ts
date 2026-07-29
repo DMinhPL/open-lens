@@ -138,4 +138,5 @@ export interface OpenProjectStatus {
   color: string | null;
   isDefault: boolean;
   position: number;
+  legacy_id?: number;
 }

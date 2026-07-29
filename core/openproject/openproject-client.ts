@@ -1,239 +1,27 @@
-import { cookies } from "next/headers";
-import dummyWorkPackages from "@/data/dummy-work-packages.json";
+/**
+ * Public facade for OpenProject data access. Every exported function here resolves
+ * connection settings once, then picks between the DUMMY implementation
+ * (`openproject-dummy.ts`) and the REAL one (`openproject-api.ts`) based on
+ * `useDummyData`. This file should stay a thin dispatcher — implementation logic
+ * belongs in one of those two files, not here.
+ */
 import type {
   WorkPackage,
-  WorkPackageStatus,
-  WorkPackagePriority,
   OpenProjectUser,
   OpenProjectProjectSummary,
   OpenProjectStatus,
 } from "@/core/domain/types";
+import { getOpSettings, buildOpCookieOptions, INSTANCE_URL_COOKIE, API_TOKEN_COOKIE, USE_DUMMY_COOKIE } from "./openproject-settings";
+import { getDummyWorkPackages, DUMMY_USER, getDummyProjectsForUser, DUMMY_STATUSES } from "./openproject-dummy";
+import {
+  fetchWorkPackages,
+  fetchWorkPackagesForCurrentUser,
+  fetchCurrentUser,
+  fetchProjectsForUser,
+  fetchStatuses,
+} from "./openproject-api";
 
-export const INSTANCE_URL_COOKIE = "op_instance_url";
-export const API_TOKEN_COOKIE = "op_api_token";
-export const USE_DUMMY_COOKIE = "op_use_dummy";
-
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
-
-/** Shared cookie policy for the OpenProject connection cookies (instance URL, API token, dummy-data flag). */
-export function buildOpCookieOptions(overrides: Partial<{ httpOnly: boolean }> = {}) {
-  return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: ONE_YEAR_SECONDS,
-    ...overrides,
-  };
-}
-
-interface OpSettings {
-  instanceUrl: string | null;
-  apiToken: string | null;
-  useDummyData: boolean;
-}
-
-export async function getOpSettings(): Promise<OpSettings> {
-  const store = await cookies();
-  const instanceUrl = store.get(INSTANCE_URL_COOKIE)?.value ?? null;
-  const apiToken = store.get(API_TOKEN_COOKIE)?.value ?? null;
-  const dummyCookie = store.get(USE_DUMMY_COOKIE)?.value;
-
-  const envDefault = process.env.USE_DUMMY_DATA !== "false";
-  const useDummyData = dummyCookie ? dummyCookie === "1" : envDefault || !instanceUrl || !apiToken;
-
-  return { instanceUrl, apiToken, useDummyData };
-}
-
-/**
- * Single point of contact for authenticated GET requests against a live OpenProject
- * instance. Centralizes Basic-auth header construction and error handling so every
- * endpoint (work packages, users, projects, ...) goes through the same path.
- */
-async function openProjectGet<T>(instanceUrl: string, apiToken: string, path: string): Promise<T> {
-  const auth = Buffer.from(`apikey:${apiToken}`).toString("base64");
-  const res = await fetch(`${instanceUrl.replace(/\/$/, "")}${path}`, {
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error(`OpenProject API request failed: ${res.status} ${res.statusText}`);
-  }
-
-  return res.json() as Promise<T>;
-}
-
-interface RawOpenProjectWorkPackage {
-  id: number;
-  subject: string;
-  percentageDone: number | null;
-  createdAt: string;
-  updatedAt: string;
-  startDate?: string | null;
-  dueDate?: string | null;
-  customField25?: string | null;
-  derivedDueDate?: string | null;
-  spentTime?: string | null;
-  _links: {
-    type?: { title?: string };
-    status?: { title?: string };
-    priority?: { title?: string };
-    project?: { href?: string; title?: string };
-    parent?: { href?: string; title?: string };
-    assignee?: { title?: string };
-    author?: { title?: string };
-  };
-}
-
-function mapStatus(title?: string): WorkPackageStatus {
-  switch (title) {
-    case "Closed":
-    case "Rejected":
-      return "Closed";
-    case "In progress":
-    case "In specification":
-      return "In progress";
-    case "On hold":
-      return "On hold";
-    default:
-      return "New";
-  }
-}
-
-function mapPriority(title?: string): WorkPackagePriority {
-  switch (title) {
-    case "Low":
-      return "Low";
-    case "High":
-      return "High";
-    case "Immediate":
-      return "Immediate";
-    default:
-      return "Normal";
-  }
-}
-
-function durationToHours(duration?: string | null): number | undefined {
-  if (!duration) return undefined;
-
-  const match = duration.match(
-    /^P(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
-  );
-  if (!match) return undefined;
-
-  const [, weeks = "0", days = "0", hours = "0", minutes = "0", seconds = "0"] = match;
-  return (
-    Number(weeks) * 168 +
-    Number(days) * 24 +
-    Number(hours) +
-    Number(minutes) / 60 +
-    Number(seconds) / 3600
-  );
-}
-
-function idFromHref(href?: string): number | undefined {
-  if (!href) return undefined;
-
-  const match = href.match(/\/(\d+)\/?(?:[?#].*)?$/);
-  return match ? Number(match[1]) : undefined;
-}
-
-function mapWorkPackage(raw: RawOpenProjectWorkPackage): WorkPackage {
-  const statusLabel = raw._links.status?.title;
-  const priorityLabel = raw._links.priority?.title;
-  const status = mapStatus(statusLabel);
-  return {
-    id: raw.id,
-    subject: raw.subject,
-    type: raw._links.type?.title ?? "Unknown",
-    status,
-    statusLabel: statusLabel ?? status,
-    priority: mapPriority(priorityLabel),
-    priorityLabel: priorityLabel ?? mapPriority(priorityLabel),
-    project: raw._links.project?.title ?? "Unknown",
-    projectId: idFromHref(raw._links.project?.href),
-    parentId: idFromHref(raw._links.parent?.href),
-    parentTitle: raw._links.parent?.title,
-    assignee: raw._links.assignee?.title ?? "Unassigned",
-    author: raw._links.author?.title ?? "Unknown",
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
-    closedAt: status === "Closed" ? raw.updatedAt : undefined,
-    startDate: raw.startDate ?? '',
-    derivedDueDate: raw.derivedDueDate ?? '',
-    dueDate: raw.dueDate ?? '',
-    customField25: raw.customField25 ?? '',
-    percentDone: raw.percentageDone ?? 0,
-    spentHours: durationToHours(raw.spentTime),
-  };
-}
-
-/** Shape of every OpenProject HAL collection response (`_type: "Collection"`). */
-interface HalCollection<T> {
-  total: number;
-  count: number;
-  _embedded: { elements: T[] };
-}
-
-type WorkPackageFilter = Record<string, { operator: string; values: string[] }>;
-
-function getDummyWorkPackages(): WorkPackage[] {
-  type DummyWorkPackage = Partial<WorkPackage> &
-    Pick<
-      WorkPackage,
-      | "id"
-      | "subject"
-      | "status"
-      | "priority"
-      | "project"
-      | "assignee"
-      | "createdAt"
-      | "updatedAt"
-      | "percentDone"
-    >;
-
-  const projectNames = Array.from(
-    new Set((dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => workPackage.project)),
-  ).sort((a, b) => a.localeCompare(b));
-
-  const subjectById = new Map(
-    (dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => [workPackage.id, workPackage.subject]),
-  );
-
-  return (dummyWorkPackages as DummyWorkPackage[]).map((workPackage) => ({
-    ...workPackage,
-    projectId: workPackage.projectId ?? projectNames.indexOf(workPackage.project) + 1,
-    type: workPackage.type ?? "Task",
-    statusLabel: workPackage.statusLabel ?? workPackage.status,
-    priorityLabel: workPackage.priorityLabel ?? workPackage.priority,
-    author: workPackage.author ?? workPackage.assignee,
-    spentHours: workPackage.spentHours ?? 0,
-    parentTitle: workPackage.parentId
-      ? workPackage.parentTitle ?? subjectById.get(workPackage.parentId) ?? "Unknown ticket"
-      : undefined,
-  }));
-}
-
-async function fetchFromOpenProject(
-  instanceUrl: string,
-  apiToken: string,
-  filters: WorkPackageFilter[] = [],
-): Promise<WorkPackage[]> {
-  const params = new URLSearchParams({
-    pageSize: "200",
-    filters: JSON.stringify(filters),
-  });
-  const json = await openProjectGet<HalCollection<RawOpenProjectWorkPackage>>(
-    instanceUrl,
-    apiToken,
-    `/api/v3/work_packages?${params.toString()}`,
-  );
-  return (json._embedded?.elements ?? []).map(mapWorkPackage);
-}
+export { INSTANCE_URL_COOKIE, API_TOKEN_COOKIE, USE_DUMMY_COOKIE, buildOpCookieOptions, getOpSettings };
 
 export async function getWorkPackages(): Promise<WorkPackage[]> {
   const settings = await getOpSettings();
@@ -242,45 +30,7 @@ export async function getWorkPackages(): Promise<WorkPackage[]> {
     return getDummyWorkPackages();
   }
 
-  return fetchFromOpenProject(settings.instanceUrl, settings.apiToken);
-}
-
-const DUMMY_USER: OpenProjectUser = {
-  id: 1,
-  name: "Demo User",
-  login: "demo",
-  firstName: "Demo",
-  lastName: "User",
-  email: "demo@openlens.local",
-  avatar: null,
-  status: "active",
-  admin: false,
-};
-
-interface RawOpenProjectUser {
-  id: number;
-  name: string;
-  login: string;
-  firstName: string;
-  lastName: string;
-  email: string | null;
-  avatar: string | null;
-  status: string;
-  admin: boolean;
-}
-
-function mapUser(raw: RawOpenProjectUser): OpenProjectUser {
-  return {
-    id: raw.id,
-    name: raw.name,
-    login: raw.login,
-    firstName: raw.firstName,
-    lastName: raw.lastName,
-    email: raw.email,
-    avatar: raw.avatar,
-    status: raw.status,
-    admin: raw.admin,
-  };
+  return fetchWorkPackages(settings.instanceUrl, settings.apiToken);
 }
 
 /** Returns work packages assigned to the currently authenticated OpenProject user. */
@@ -291,19 +41,7 @@ export async function getWorkPackagesForCurrentUser(): Promise<WorkPackage[]> {
     return getDummyWorkPackages();
   }
 
-  const currentUser = await openProjectGet<RawOpenProjectUser>(
-    settings.instanceUrl,
-    settings.apiToken,
-    "/api/v3/users/me",
-  );
-  return fetchFromOpenProject(settings.instanceUrl, settings.apiToken, [
-    {
-      assignee: {
-        operator: "=",
-        values: [String(currentUser.id)],
-      },
-    },
-  ]);
+  return fetchWorkPackagesForCurrentUser(settings.instanceUrl, settings.apiToken);
 }
 
 /** Returns the current user, honoring the dummy-data switch just like {@link getWorkPackages}. */
@@ -314,86 +52,18 @@ export async function getCurrentUser(): Promise<OpenProjectUser> {
     return DUMMY_USER;
   }
 
-  const raw = await openProjectGet<RawOpenProjectUser>(settings.instanceUrl, settings.apiToken, "/api/v3/users/me");
-  return mapUser(raw);
+  return fetchCurrentUser(settings.instanceUrl, settings.apiToken);
 }
 
-interface RawOpenProjectProject {
-  id: number;
-  identifier: string;
-  name: string;
-  active: boolean;
-}
-
-function mapProject(raw: RawOpenProjectProject): OpenProjectProjectSummary {
-  return {
-    id: raw.id,
-    identifier: raw.identifier,
-    name: raw.name,
-    active: raw.active,
-  };
-}
-
-function dummyProjectsForUser(): OpenProjectProjectSummary[] {
-  const names = Array.from(new Set((dummyWorkPackages as WorkPackage[]).map((wp) => wp.project))).sort((a, b) =>
-    a.localeCompare(b),
-  );
-  return names.map((name, index) => ({
-    id: index + 1,
-    identifier: name.toLowerCase().replace(/\s+/g, "_"),
-    name,
-    active: true,
-  }));
-}
-
-/**
- * Returns the projects a given user is a member of, using OpenProject's `principal`
- * filter on the `/projects` collection endpoint:
- * `filters=[{"principal":{"operator":"=","values":["<userId>"]}}]`
- */
 export async function getProjectsForUser(userId: number): Promise<OpenProjectProjectSummary[]> {
   const settings = await getOpSettings();
 
   if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
-    return dummyProjectsForUser();
+    return getDummyProjectsForUser();
   }
 
-  const filters = encodeURIComponent(JSON.stringify([{ principal: { operator: "=", values: [String(userId)] } }]));
-  const json = await openProjectGet<HalCollection<RawOpenProjectProject>>(
-    settings.instanceUrl,
-    settings.apiToken,
-    `/api/v3/projects?filters=${filters}&pageSize=200`,
-  );
-  return (json._embedded?.elements ?? []).map(mapProject);
+  return fetchProjectsForUser(settings.instanceUrl, settings.apiToken, userId);
 }
-
-interface RawOpenProjectStatus {
-  id: number;
-  name: string;
-  isClosed: boolean;
-  color: string | null;
-  isDefault: boolean;
-  position: number;
-}
-
-function mapOpenProjectStatus(raw: RawOpenProjectStatus): OpenProjectStatus {
-  return {
-    id: raw.id,
-    name: raw.name,
-    isClosed: raw.isClosed,
-    color: raw.color,
-    isDefault: raw.isDefault,
-    position: raw.position,
-  };
-}
-
-const DUMMY_STATUSES: OpenProjectStatus[] = [
-  { id: 1, name: "New", isClosed: false, color: "#3997AD", isDefault: true, position: 1 },
-  { id: 2, name: "In progress", isClosed: false, color: "#3852C6", isDefault: false, position: 2 },
-  { id: 3, name: "On hold", isClosed: false, color: "#A96FFE", isDefault: false, position: 3 },
-  { id: 4, name: "Closed", isClosed: true, color: "#DF6DA1", isDefault: false, position: 4 },
-  { id: 5, name: "Rejected", isClosed: true, color: "#D32937", isDefault: false, position: 5 },
-];
 
 /** Returns all work package statuses configured on the OpenProject instance. */
 export async function getStatuses(): Promise<OpenProjectStatus[]> {
@@ -403,10 +73,5 @@ export async function getStatuses(): Promise<OpenProjectStatus[]> {
     return DUMMY_STATUSES;
   }
 
-  const json = await openProjectGet<HalCollection<RawOpenProjectStatus>>(
-    settings.instanceUrl,
-    settings.apiToken,
-    "/api/v3/statuses",
-  );
-  return (json._embedded?.elements ?? []).map(mapOpenProjectStatus);
+  return fetchStatuses(settings.instanceUrl, settings.apiToken);
 }

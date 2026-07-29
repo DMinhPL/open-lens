@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [apiToken, setApiToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -51,7 +51,7 @@ export default function LoginPage() {
           <CardDescription>Enter your instance URL and API token to get started.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
             <div className="flex flex-col gap-2">
               <Label htmlFor="instanceUrl">Instance URL</Label>
               <Input
