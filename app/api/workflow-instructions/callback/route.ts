@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeJob, failJob, getJob } from "@/core/workflow-instructions/workflow-instructions-jobs";
+import type { WorkflowInstructionTicket } from "@/core/domain/types";
 
 /**
  * `POST /api/workflow-instructions/callback`
@@ -12,13 +13,20 @@ import { completeJob, failJob, getJob } from "@/core/workflow-instructions/workf
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { jobId, message, success } = data as { jobId?: string; message?: string; success?: boolean };
+    const { jobId, message, success, html, tickets, receivers } = data as {
+      jobId?: string;
+      message?: string;
+      success?: boolean;
+      html?: string;
+      tickets?: WorkflowInstructionTicket[];
+      receivers?: string[];
+    };
 
     if (jobId) {
       if (success === false) {
         failJob(jobId, message);
       } else {
-        completeJob(jobId, message);
+        completeJob(jobId, message, { html, tickets, receivers });
       }
     }
 

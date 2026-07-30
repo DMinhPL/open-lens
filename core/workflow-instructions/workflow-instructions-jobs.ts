@@ -30,9 +30,16 @@ export function createJob(jobId: string) {
   store.set(jobId, { status: "pending", updatedAt: Date.now() });
 }
 
-/** Marks a job `completed`, called from the `/callback` route once Make.com signals success. */
-export function completeJob(jobId: string, message?: string) {
-  store.set(jobId, { status: "completed", message, updatedAt: Date.now() });
+/**
+ * Marks a job `completed`, called from the `/callback` route once Make.com signals success.
+ * `extra` carries the generated HTML/tickets/receivers through from the callback payload, when present.
+ */
+export function completeJob(
+  jobId: string,
+  message?: string,
+  extra?: Pick<WorkflowInstructionJobState, "html" | "tickets" | "receivers">,
+) {
+  store.set(jobId, { status: "completed", message, ...extra, updatedAt: Date.now() });
 }
 
 /** Marks a job `error`, called from the `/callback` route when Make.com signals failure. */
@@ -44,5 +51,11 @@ export function failJob(jobId: string, message?: string) {
 export function getJob(jobId: string): WorkflowInstructionJobState | undefined {
   const job = store.get(jobId);
   if (!job) return undefined;
-  return { status: job.status, message: job.message };
+  return {
+    status: job.status,
+    message: job.message,
+    html: job.html,
+    tickets: job.tickets,
+    receivers: job.receivers,
+  };
 }
