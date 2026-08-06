@@ -45,6 +45,19 @@ export function getStatusColor(name: string, colorMap: Record<string, string>): 
   return colorMap[name] ?? STATUS_COLORS[name] ?? fallbackColorFor(name);
 }
 
+/** Status names treated as "closed" until the real status list has loaded (isClosed flag unavailable yet). */
+const DUMMY_CLOSED_STATUS_NAMES = new Set(["Closed", "Resolved", "Done", "Cancelled", "Developed"]);
+
+/**
+ * Whether a status name represents a completion state (Done, Cancelled, Developed, Closed, ...),
+ * per OpenProject's own `isClosed` flag on the status resource — not a hardcoded name list.
+ * Falls back to a best-guess name set only while `statuses` hasn't loaded yet.
+ */
+export function isClosedStatus(name: string, statuses: OpenProjectStatus[] | null | undefined): boolean {
+  const match = statuses?.find((s) => s.name === name);
+  return match ? match.isClosed : DUMMY_CLOSED_STATUS_NAMES.has(name);
+}
+
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
   const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;

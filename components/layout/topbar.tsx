@@ -9,7 +9,7 @@ export function Topbar() {
   const { projects, project, setProject, period, setPeriod, loading } = useFilters();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
       <div className="text-sm text-muted-foreground">
         {loading ? "Loading work packages…" : "Personal work monitoring"}
       </div>

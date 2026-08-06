@@ -53,7 +53,6 @@ export default function TicketsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
   const [priority, setPriority] = useState<string>("all");
-
   const statuses = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.statusLabel ?? wp.status))).sort(),
     [workPackages],
