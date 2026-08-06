@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -71,6 +71,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --glass-blob-1: oklch(0.4 0 0 / 25%);
+  --glass-blob-2: oklch(0.55 0 0 / 20%);
+  --glass-blob-3: oklch(0.7 0 0 / 15%);
 }
 
 .dark {
@@ -100,6 +103,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --glass-blob-1: oklch(0.35 0 0 / 45%);
+  --glass-blob-2: oklch(0.25 0 0 / 40%);
+  --glass-blob-3: oklch(0.45 0 0 / 35%);
 }
 
 @layer base {
@@ -111,5 +117,87 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .wallpaper-layer {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    right: -10%;
+    bottom: -10%;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background-color: var(--background);
+    filter: blur(14px) saturate(160%);
+  }
+
+  .wallpaper-layer__blobs,
+  .wallpaper-layer__image,
+  .wallpaper-layer__tint {
+    position: absolute;
+    inset: 0;
+  }
+
+  .wallpaper-layer__blobs {
+    background-image:
+      radial-gradient(circle at 15% 20%, var(--glass-blob-1), transparent 55%),
+      radial-gradient(circle at 85% 15%, var(--glass-blob-2), transparent 55%),
+      radial-gradient(circle at 50% 90%, var(--glass-blob-3), transparent 55%);
+  }
+
+  .wallpaper-layer__image {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .wallpaper-layer__tint {
+    background-color: color-mix(in oklch, var(--background) 55%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce),
+    (prefers-reduced-transparency: reduce) {
+    .wallpaper-layer {
+      filter: none;
+    }
+    .wallpaper-layer__blobs,
+    .wallpaper-layer__image {
+      display: none;
+    }
+    .wallpaper-layer__tint {
+      background-color: var(--background);
+    }
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in oklch, var(--background) 45%, transparent);
+    backdrop-filter: blur(14px) saturate(200%);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 16%, transparent),
+      0 1px 2px 0 color-mix(in oklch, black 6%, transparent);
+  }
+
+  .glass-sidebar {
+    background: color-mix(in oklch, var(--sidebar) 45%, transparent);
+    backdrop-filter: blur(25px) saturate(200%);
+    box-shadow:
+      inset -1px 0 0 0 color-mix(in oklch, white 14%, transparent),
+      1px 0 4px 0 color-mix(in oklch, black 6%, transparent);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-sidebar {
+      background: var(--background);
+      backdrop-filter: none;
+    }
+    .glass-sidebar {
+      background: var(--sidebar);
+    }
   }
 }

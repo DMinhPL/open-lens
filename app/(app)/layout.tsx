@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <UserBootstrap />
       <div className="flex min-h-screen w-full">
         <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="app-layout-main flex min-w-0 flex-1 flex-col">
           <Topbar />
           <main className="main-layout-container flex-1 overflow-x-hidden p-4 md:p-6">{children}</main>
         </div>

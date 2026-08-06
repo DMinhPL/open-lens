@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters, DEFAULT_PROJECT_KEY } from "@/core/filters-context";
+import { useWallpaper } from "@/core/appearance/use-wallpaper";
 import { useOpSettings } from "@/core/openproject/use-op-settings";
 import { useUpdateSettingsMutation } from "@/core/api/api-slice";
 import { useMakeSettings } from "@/core/workflow-instructions/use-make-settings";
@@ -32,6 +33,7 @@ export default function SettingsPage() {
     (state) => state.user,
   );
   const { settings, refresh: refreshSettings } = useOpSettings();
+  const wallpaper = useWallpaper();
   const [updateSettings] = useUpdateSettingsMutation();
   const make = useMakeSettings();
   const [instanceUrl, setInstanceUrl] = useState("");
@@ -156,6 +158,34 @@ export default function SettingsPage() {
     toast.success(useDummyData ? "Using dummy data" : "Using live OpenProject data");
   }
 
+  const MAX_WALLPAPER_BYTES = 3 * 1024 * 1024;
+
+  function handleWallpaperChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > MAX_WALLPAPER_BYTES) {
+      toast.error("Image is too large — please choose one under 3MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      wallpaper.save(reader.result as string);
+      toast.success("Background updated");
+    };
+    reader.onerror = () => toast.error("Could not read that image");
+    reader.readAsDataURL(file);
+  }
+
+  function handleClearWallpaper() {
+    wallpaper.clear();
+    toast.success("Background reset to default");
+  }
+
   function handleDefaultProjectChange(value: string) {
     setDefaultProject(value);
     window.localStorage.setItem(DEFAULT_PROJECT_KEY, value);
@@ -263,6 +293,34 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Background</CardTitle>
+            <CardDescription>
+              Wallpaper for the liquid-glass theme. Stored in this browser only — pick an
+              image under 3MB.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {wallpaper.dataUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded data URL, not a static asset
+              <img
+                src={wallpaper.dataUrl}
+                alt="Current background"
+                className="h-32 w-full rounded-md border object-cover"
+              />
+            )}
+            <div className="flex gap-2">
+              <Input type="file" accept="image/*" onChange={handleWallpaperChange} className="max-w-64" />
+              {wallpaper.hasCustom && (
+                <Button type="button" variant="outline" onClick={handleClearWallpaper}>
+                  Reset to default
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 

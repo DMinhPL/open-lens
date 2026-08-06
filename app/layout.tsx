@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReduxProvider } from "@/components/redux-provider";
+import { WallpaperLayer } from "@/components/wallpaper-layer";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <WallpaperLayer />
             {children}
             <Toaster />
           </ThemeProvider>
