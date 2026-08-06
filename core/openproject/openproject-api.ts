@@ -9,6 +9,7 @@ import type {
   WorkPackagePriority,
   OpenProjectUser,
   OpenProjectProjectSummary,
+  OpenProjectProjectMember,
   OpenProjectStatus,
 } from "@/core/domain/types";
 
@@ -39,6 +40,33 @@ interface HalCollection<T> {
   total: number;
   count: number;
   _embedded: { elements: T[] };
+}
+
+const PROJECT_COLLECTION_PAGE_SIZE = 200;
+
+/** Fetches every page for project-scoped collections without changing legacy collection behavior. */
+async function fetchProjectCollection<T>(
+  instanceUrl: string,
+  apiToken: string,
+  path: string,
+  filters: WorkPackageFilter[],
+): Promise<T[]> {
+  const elements: T[] = [];
+  let offset = 1;
+
+  while (true) {
+    const params = new URLSearchParams({
+      offset: String(offset),
+      pageSize: String(PROJECT_COLLECTION_PAGE_SIZE),
+      filters: JSON.stringify(filters),
+    });
+    const page = await openProjectGet<HalCollection<T>>(instanceUrl, apiToken, `${path}?${params.toString()}`);
+    const pageElements = page._embedded?.elements ?? [];
+    elements.push(...pageElements);
+
+    if (pageElements.length === 0 || elements.length >= page.total) return elements;
+    offset += 1;
+  }
 }
 
 type WorkPackageFilter = Record<string, { operator: string; values: string[] }>;
@@ -243,6 +271,50 @@ export async function fetchWorkPackagesForCurrentUser(instanceUrl: string, apiTo
       },
     },
   ]);
+}
+
+/** Fetches every visible work package in one project, regardless of assignee. */
+export async function fetchWorkPackagesForProject(
+  instanceUrl: string,
+  apiToken: string,
+  projectId: number,
+): Promise<WorkPackage[]> {
+  const raw = await fetchProjectCollection<RawOpenProjectWorkPackage>(instanceUrl, apiToken, "/api/v3/work_packages", [
+    { project: { operator: "=", values: [String(projectId)] } },
+  ]);
+  return raw.map(mapWorkPackage);
+}
+
+interface RawOpenProjectMembership {
+  _links: {
+    principal: { href?: string; title?: string };
+  };
+}
+
+/** Fetches direct user memberships for a project; group principals are deliberately excluded. */
+export async function fetchProjectMembers(
+  instanceUrl: string,
+  apiToken: string,
+  projectId: number,
+): Promise<OpenProjectProjectMember[]> {
+  const memberships = await fetchProjectCollection<RawOpenProjectMembership>(
+    instanceUrl,
+    apiToken,
+    "/api/v3/memberships",
+    [{ project: { operator: "=", values: [String(projectId)] } }],
+  );
+  const members = new Map<number, OpenProjectProjectMember>();
+
+  for (const membership of memberships) {
+    const href = membership._links.principal.href;
+    if (!href?.includes("/api/v3/users/")) continue;
+
+    const id = idFromHref(href);
+    if (id === undefined) continue;
+    members.set(id, { id, name: membership._links.principal.title ?? `User ${id}` });
+  }
+
+  return Array.from(members.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Fetches the currently authenticated user. */

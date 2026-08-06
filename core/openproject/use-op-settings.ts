@@ -1,26 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { OpenProjectSettings } from "@/core/domain/types";
+import { useGetSettingsQuery } from "@/core/api/api-slice";
 
 /**
  * Single point of contact for `GET /api/settings`. Any page that needs to know the
- * connection state (hasCredentials, instanceUrl, useDummyData) should use this
- * instead of duplicating the fetch.
+ * connection state (hasCredentials, instanceUrl, useDummyData) should use this instead of
+ * duplicating the fetch — backed by RTK Query's shared cache, so the 6+ pages calling this
+ * hook dedupe into one request/subscription instead of each firing its own fetch on mount,
+ * plus get stale-while-revalidate refetching (see `core/api/api-slice.ts`) for free.
+ *
+ * There's no `setSettings` here anymore — writes go through `useUpdateSettingsMutation`
+ * (`core/api/api-slice.ts`), which invalidates the `Settings` tag so every subscriber of this
+ * hook picks up the change automatically instead of each caller patching local state by hand.
  */
 export function useOpSettings() {
-  const [settings, setSettings] = useState<OpenProjectSettings | null>(null);
+  const { data: settings, isFetching: loading, error: queryError, refetch: refresh } = useGetSettingsQuery();
+  const error = queryError ? ((queryError as { message?: string }).message ?? "Request failed") : null;
 
-  const refresh = useCallback(async () => {
-    const data: OpenProjectSettings = await fetch("/api/settings").then((res) => res.json());
-    setSettings(data);
-    return data;
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount, mirrors React's documented data-fetching pattern
-    refresh();
-  }, [refresh]);
-
-  return { settings, setSettings, refresh };
+  return { settings: settings ?? null, loading, error, refresh };
 }

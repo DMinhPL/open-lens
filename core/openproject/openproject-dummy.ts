@@ -8,6 +8,7 @@ import type {
   WorkPackage,
   OpenProjectUser,
   OpenProjectProjectSummary,
+  OpenProjectProjectMember,
   OpenProjectStatus,
 } from "@/core/domain/types";
 
@@ -72,6 +73,24 @@ export function getDummyProjectsForUser(): OpenProjectProjectSummary[] {
     name,
     active: true,
   }));
+}
+
+/** Dummy equivalent of the project-scoped work-package API. */
+export function getDummyWorkPackagesForProject(projectId: number): WorkPackage[] {
+  return getDummyWorkPackages().filter((workPackage) => workPackage.projectId === projectId);
+}
+
+/** Direct dummy project members, derived from assignees in the selected project's fixture data. */
+export function getDummyProjectMembers(projectId: number): OpenProjectProjectMember[] {
+  const names = Array.from(
+    new Set(
+      getDummyWorkPackagesForProject(projectId)
+        .map((workPackage) => workPackage.assignee)
+        .filter((name) => name && name !== "Unassigned"),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  return names.map((name, index) => ({ id: index + 1, name }));
 }
 
 export const DUMMY_STATUSES: OpenProjectStatus[] = [

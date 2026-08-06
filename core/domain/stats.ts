@@ -5,6 +5,7 @@ import type {
   DashboardStats,
   Period,
   StatusBreakdown,
+  TaskBugWorkloadEntry,
   TrendPoint,
   TypeBreakdown,
   TypeThroughput,
@@ -140,8 +141,15 @@ export function computeStatusBreakdown(
   }));
 }
 
-export function computeWorkload(workPackages: WorkPackage[], groupBy: WorkloadGroupBy): WorkloadEntry[] {
+export function computeWorkload(
+  workPackages: WorkPackage[],
+  groupBy: WorkloadGroupBy,
+  initialKeys: Iterable<string> = [],
+): WorkloadEntry[] {
   const counts = new Map<string, number>();
+  for (const key of initialKeys) {
+    if (key) counts.set(key, 0);
+  }
   for (const wp of workPackages) {
     const key = wp[groupBy];
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -149,6 +157,33 @@ export function computeWorkload(workPackages: WorkPackage[], groupBy: WorkloadGr
   return Array.from(counts.entries())
     .map(([key, count]) => ({ key, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+/** Counts only open-workload types shown by the workload chart, preserving zero-count seeded members. */
+export function computeTaskBugWorkload(
+  workPackages: WorkPackage[],
+  groupBy: WorkloadGroupBy,
+  initialKeys: Iterable<string> = [],
+): TaskBugWorkloadEntry[] {
+  const counts = new Map<string, TaskBugWorkloadEntry>();
+  for (const key of initialKeys) {
+    if (key) counts.set(key, { key, taskCount: 0, bugCount: 0 });
+  }
+
+  for (const workPackage of workPackages) {
+    const type = workPackage.type.trim().toLowerCase();
+    if (type !== "task" && type !== "bug") continue;
+
+    const key = workPackage[groupBy];
+    const entry = counts.get(key) ?? { key, taskCount: 0, bugCount: 0 };
+    if (type === "task") entry.taskCount += 1;
+    else entry.bugCount += 1;
+    counts.set(key, entry);
+  }
+
+  return Array.from(counts.values()).sort(
+    (a, b) => b.taskCount + b.bugCount - (a.taskCount + a.bugCount) || a.key.localeCompare(b.key),
+  );
 }
 
 /**

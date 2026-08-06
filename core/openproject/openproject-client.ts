@@ -9,13 +9,23 @@ import type {
   WorkPackage,
   OpenProjectUser,
   OpenProjectProjectSummary,
+  OpenProjectProjectMember,
   OpenProjectStatus,
 } from "@/core/domain/types";
 import { getOpSettings, buildOpCookieOptions, INSTANCE_URL_COOKIE, API_TOKEN_COOKIE, USE_DUMMY_COOKIE } from "./openproject-settings";
-import { getDummyWorkPackages, DUMMY_USER, getDummyProjectsForUser, DUMMY_STATUSES } from "./openproject-dummy";
+import {
+  getDummyWorkPackages,
+  getDummyWorkPackagesForProject,
+  getDummyProjectMembers,
+  DUMMY_USER,
+  getDummyProjectsForUser,
+  DUMMY_STATUSES,
+} from "./openproject-dummy";
 import {
   fetchWorkPackages,
   fetchWorkPackagesForCurrentUser,
+  fetchWorkPackagesForProject,
+  fetchProjectMembers,
   fetchCurrentUser,
   fetchProjectsForUser,
   fetchStatuses,
@@ -42,6 +52,28 @@ export async function getWorkPackagesForCurrentUser(): Promise<WorkPackage[]> {
   }
 
   return fetchWorkPackagesForCurrentUser(settings.instanceUrl, settings.apiToken);
+}
+
+/** Returns all visible work packages in one project, across every assignee. */
+export async function getWorkPackagesForProject(projectId: number): Promise<WorkPackage[]> {
+  const settings = await getOpSettings();
+
+  if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
+    return getDummyWorkPackagesForProject(projectId);
+  }
+
+  return fetchWorkPackagesForProject(settings.instanceUrl, settings.apiToken, projectId);
+}
+
+/** Returns direct user members visible to the caller for one project. */
+export async function getProjectMembers(projectId: number): Promise<OpenProjectProjectMember[]> {
+  const settings = await getOpSettings();
+
+  if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
+    return getDummyProjectMembers(projectId);
+  }
+
+  return fetchProjectMembers(settings.instanceUrl, settings.apiToken, projectId);
 }
 
 /** Returns the current user, honoring the dummy-data switch just like {@link getWorkPackages}. */

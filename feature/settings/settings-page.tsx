@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters, DEFAULT_PROJECT_KEY } from "@/core/filters-context";
 import { useOpSettings } from "@/core/openproject/use-op-settings";
+import { useUpdateSettingsMutation } from "@/core/api/api-slice";
 import { useMakeSettings } from "@/core/workflow-instructions/use-make-settings";
 import { useAppDispatch, useAppSelector } from "@/core/store/hooks";
 import { clearUser, fetchCurrentUser } from "@/core/store/userSlice";
@@ -30,7 +31,8 @@ export default function SettingsPage() {
   const { info: currentUser, infoStatus, projects: userProjects, projectsStatus, projectsError } = useAppSelector(
     (state) => state.user,
   );
-  const { settings, setSettings, refresh: refreshSettings } = useOpSettings();
+  const { settings, refresh: refreshSettings } = useOpSettings();
+  const [updateSettings] = useUpdateSettingsMutation();
   const make = useMakeSettings();
   const [instanceUrl, setInstanceUrl] = useState("");
   const [apiToken, setApiToken] = useState("");
@@ -149,12 +151,7 @@ export default function SettingsPage() {
   }
 
   async function handleToggleDummy(useDummyData: boolean) {
-    await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ useDummyData }),
-    });
-    setSettings((prev) => (prev ? { ...prev, useDummyData } : prev));
+    await updateSettings({ useDummyData }).unwrap();
     refresh();
     toast.success(useDummyData ? "Using dummy data" : "Using live OpenProject data");
   }

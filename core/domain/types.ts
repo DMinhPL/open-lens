@@ -80,6 +80,13 @@ export interface WorkloadEntry {
   count: number;
 }
 
+/** Open Task/Bug workload split for one assignee, priority, or project. */
+export interface TaskBugWorkloadEntry {
+  key: string;
+  taskCount: number;
+  bugCount: number;
+}
+
 export interface DashboardStats {
   completedThisWeek: number;
   completedThisMonth: number;
@@ -117,6 +124,18 @@ export interface OpenProjectProjectSummary {
   identifier: string;
   name: string;
   active: boolean;
+}
+
+/** A direct user membership returned for one OpenProject project. */
+export interface OpenProjectProjectMember {
+  id: number;
+  name: string;
+}
+
+/** Response shape of `GET /api/openproject/work-packages?projectId=...` — the Workload page's full-team view. */
+export interface ProjectWorkloadResponse {
+  workPackages: WorkPackage[];
+  members: OpenProjectProjectMember[];
 }
 
 /** Response shape of `GET /api/settings` — shared between any page that needs to

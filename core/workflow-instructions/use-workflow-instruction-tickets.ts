@@ -21,8 +21,9 @@ interface TicketsState {
  * job store on the server (`core/workflow-instructions/workflow-instructions-jobs.ts`), so a page
  * refresh losing it is expected and accepted, not a bug to fix here. There is no persistence
  * layer and no corresponding "save" endpoint, which is also why this hook is plain `useState`
- * rather than built on `useApiQuery`/`useApiMutation` (`core/api/`) — those wrap server
- * round-trips, and there isn't one to wrap for this data.
+ * rather than built on the RTK Query `openLensApi` slice (`core/api/api-slice.ts`) or
+ * `useApiMutation` (`core/api/`) — those wrap server round-trips, and there isn't one to wrap
+ * for this data.
  */
 export function useWorkflowInstructionTickets() {
   const [state, setState] = useState<TicketsState>({ tickets: [], receivers: [] });

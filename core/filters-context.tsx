@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import { useAppSelector } from "@/core/store/hooks";
-import { useApiQuery } from "@/core/api/use-api-query";
-import { matchesProject, wasCreatedInPeriod } from "@/core/domain/work-package-filters";
+import { useGetMyWorkPackagesQuery } from "@/core/api/api-slice";
 import type { OpenProjectProjectSummary, Period, WorkPackage } from "@/core/domain/types";
+import { matchesProject } from "@/core/domain/work-package-filters";
+import { useAppSelector } from "@/core/store/hooks";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
 interface FiltersContextValue {
   allWorkPackages: WorkPackage[];
@@ -27,10 +27,11 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const userProjects = useAppSelector((state) => state.user.projects);
   const {
     data,
-    loading,
-    error,
-    refresh,
-  } = useApiQuery<{ workPackages: WorkPackage[] }>("/api/openproject/work-packages?mine=true");
+    isFetching: loading,
+    error: queryError,
+    refetch: refresh,
+  } = useGetMyWorkPackagesQuery();
+  const error = queryError ? (queryError as { message?: string }).message ?? "Request failed" : null;
   const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [project, setProjectState] = useState("all");
   const [period, setPeriod] = useState<Period>("month");
