@@ -95,7 +95,7 @@ export function computeWeeklyTrend(workPackages: WorkPackage[], numWeeks = 12): 
     const weekStart = addDays(currentWeekStart, -7 * i);
     const weekEnd = addDays(weekStart, 7);
     points.push({
-      label: `${weekStart.getUTCMonth() + 1}/${weekStart.getUTCDate()}`,
+      label: `${weekStart.getUTCDate()}/${weekStart.getUTCMonth() + 1}`,
       periodStart: weekStart.toISOString(),
       completed: closedInRange(workPackages, weekStart, weekEnd),
     });
@@ -257,7 +257,7 @@ export function computeDailyTypeTrend(workPackages: WorkPackage[], numDays = 14)
     }
 
     points.push({
-      label: `${dayStart.getUTCMonth() + 1}/${dayStart.getUTCDate()}`,
+      label: `${dayStart.getUTCDate()}/${dayStart.getUTCMonth() + 1}`,
       date: dayStart.toISOString(),
       byType,
     });
@@ -310,7 +310,7 @@ export function computeBurnup(workPackages: WorkPackage[], period: Period): Burn
     ).length;
 
     points.push({
-      label: `${dayStart.getUTCMonth() + 1}/${dayStart.getUTCDate()}`,
+      label: `${dayStart.getUTCDate()}/${dayStart.getUTCMonth() + 1}`,
       date: dayStart.toISOString(),
       completed,
       total,
@@ -352,7 +352,7 @@ export function computeCumulativeFlow(workPackages: WorkPackage[], period: Perio
     }
 
     points.push({
-      label: `${dayStart.getUTCMonth() + 1}/${dayStart.getUTCDate()}`,
+      label: `${dayStart.getUTCDate()}/${dayStart.getUTCMonth() + 1}`,
       date: dayStart.toISOString(),
       backlog,
       inProgress,
