@@ -163,6 +163,25 @@ export interface ProjectOverviewStats {
   completionRate: number; // 0-100, rounded
 }
 
+/** Compact, chart-ready response used by Project Manager mode. */
+export interface ProjectManagerReport {
+  overview: ProjectOverviewStats;
+  memberStats: MemberWorkloadStat[];
+  workload: TaskBugWorkloadEntry[];
+  statusBreakdown: StatusBreakdown[];
+  typeBreakdown: TypeBreakdown[];
+  trend: TrendPoint[];
+  burnup: BurnupPoint[];
+  cfd: CfdPoint[];
+  generatedAt: string;
+}
+
+/** Cache key and request parameters for the compact Project Manager report. */
+export interface ProjectManagerReportQuery {
+  projectId: number;
+  period: Period;
+}
+
 /** Response shape of `GET /api/settings` — shared between any page that needs to
  * know the connection state (Settings page, Projects page, ...). */
 export interface OpenProjectSettings {

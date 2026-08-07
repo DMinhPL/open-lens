@@ -63,8 +63,17 @@ function periodStart(now: Date, period: Period): Date {
   return startOfMonth(now);
 }
 
+/**
+ * Determines if a work package is completed.
+ * A work package is considered completed if:
+ * - It has 100% progress and status is "done", OR
+ * - Status is "done", "closed", or "developed"
+ * @param {WorkPackage} wp - The work package to check
+ * @returns {boolean} True if the work package is completed, false otherwise
+ */
 export function isWorkPackageCompleted(wp: WorkPackage): boolean {
-  return (wp.percentDone === 100 && wp.statusLabel?.trim().toLowerCase() === "done") || wp.statusLabel?.trim().toLowerCase() === "done";
+  const statusLabel = wp.statusLabel?.trim().toLowerCase();
+  return (wp.percentDone === 100 && statusLabel === "done") || statusLabel === "done" || statusLabel === "developed";
 }
 
 /**

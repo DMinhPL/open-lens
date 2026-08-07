@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetMyWorkPackagesQuery } from "@/core/api/api-slice";
+import { usePathname } from "next/navigation";
 import type { OpenProjectProjectSummary, Period, WorkPackage } from "@/core/domain/types";
 import { matchesProject } from "@/core/domain/work-package-filters";
 import { useAppSelector } from "@/core/store/hooks";
@@ -24,13 +25,14 @@ export const DEFAULT_PROJECT_KEY = "openlens_default_project";
 const FiltersContext = createContext<FiltersContextValue | null>(null);
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const userProjects = useAppSelector((state) => state.user.projects);
   const {
     data,
     isFetching: loading,
     error: queryError,
     refetch: refresh,
-  } = useGetMyWorkPackagesQuery();
+  } = useGetMyWorkPackagesQuery(undefined, { skip: pathname.startsWith("/pm") });
   const error = queryError ? (queryError as { message?: string }).message ?? "Request failed" : null;
   const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [project, setProjectState] = useState("all");
@@ -63,7 +65,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       allWorkPackages
         .filter((workPackage) => matchesProject(workPackage, project))
     ,
-    [allWorkPackages, project, period],
+    [allWorkPackages, project],
   );
 
   const value: FiltersContextValue = {

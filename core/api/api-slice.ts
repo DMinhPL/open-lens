@@ -1,6 +1,12 @@
 import { createApi, type BaseQueryFn } from "@reduxjs/toolkit/query/react";
 import { apiFetch, ApiError } from "@/core/api/http";
-import type { OpenProjectSettings, ProjectWorkloadResponse, WorkPackage } from "@/core/domain/types";
+import type {
+  OpenProjectSettings,
+  ProjectManagerReport,
+  ProjectManagerReportQuery,
+  ProjectWorkloadResponse,
+  WorkPackage,
+} from "@/core/domain/types";
 
 export interface ApiQueryError {
   status?: number;
@@ -19,10 +25,14 @@ export interface ApiRequestArgs {
  * this codebase uses, so error messages/status codes stay identical to `useApiQuery`/
  * `useApiMutation` instead of RTK Query's default `fetchBaseQuery` error shape.
  */
-const apiBaseQuery: BaseQueryFn<string | ApiRequestArgs, unknown, ApiQueryError> = async (arg) => {
+const apiBaseQuery: BaseQueryFn<string | ApiRequestArgs, unknown, ApiQueryError> = async (arg, api) => {
   const { url, method, body } = typeof arg === "string" ? { url: arg, method: undefined, body: undefined } : arg;
   try {
-    const data = await apiFetch(url, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+    const data = await apiFetch(url, {
+      method,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: api.signal,
+    });
     return { data };
   } catch (err) {
     if (err instanceof ApiError) return { error: { status: err.status, message: err.message } };
@@ -57,6 +67,13 @@ export const openLensApi = createApi({
       query: (projectId) => `/api/openproject/work-packages?projectId=${projectId}`,
       providesTags: ["WorkPackages"],
     }),
+    /** Compact chart-ready report for Project Manager mode. */
+    getProjectManagerReport: builder.query<ProjectManagerReport, ProjectManagerReportQuery>({
+      query: ({ projectId, period }) =>
+        `/api/openproject/pm-report?projectId=${projectId}&period=${period}`,
+      providesTags: ["WorkPackages"],
+      keepUnusedDataFor: 300,
+    }),
     /**
      * Connection state (hasCredentials/instanceUrl/useDummyData) — backs `useOpSettings()`.
      * Every page that calls it shares this one cached request instead of each firing its own
@@ -77,6 +94,7 @@ export const openLensApi = createApi({
 export const {
   useGetMyWorkPackagesQuery,
   useGetProjectWorkloadQuery,
+  useGetProjectManagerReportQuery,
   useGetSettingsQuery,
   useUpdateSettingsMutation,
 } = openLensApi;
