@@ -44,29 +44,43 @@ interface HalCollection<T> {
 
 const PROJECT_COLLECTION_PAGE_SIZE = 200;
 
-/** Fetches every page for project-scoped collections without changing legacy collection behavior. */
+function projectCollectionPageUrl(path: string, filters: WorkPackageFilter[], offset: number): string {
+  const params = new URLSearchParams({
+    offset: String(offset),
+    pageSize: String(PROJECT_COLLECTION_PAGE_SIZE),
+    filters: JSON.stringify(filters),
+  });
+  return `${path}?${params.toString()}`;
+}
+
+/**
+ * Fetches every page for project-scoped collections, without changing legacy collection
+ * behavior. Fetches page 1 to learn the total count, then fires every remaining page in
+ * parallel instead of awaiting them one at a time — for a large project, that turns N
+ * sequential OpenProject round-trips into effectively one round-trip's worth of latency.
+ */
 async function fetchProjectCollection<T>(
   instanceUrl: string,
   apiToken: string,
   path: string,
   filters: WorkPackageFilter[],
 ): Promise<T[]> {
-  const elements: T[] = [];
-  let offset = 1;
+  const firstPage = await openProjectGet<HalCollection<T>>(
+    instanceUrl,
+    apiToken,
+    projectCollectionPageUrl(path, filters, 1),
+  );
+  const elements = [...(firstPage._embedded?.elements ?? [])];
+  const remainingPages = Math.ceil(firstPage.total / PROJECT_COLLECTION_PAGE_SIZE) - 1;
+  if (remainingPages <= 0) return elements;
+  const pages = await Promise.all(
+    Array.from({ length: remainingPages }, (_, i) =>
+      openProjectGet<HalCollection<T>>(instanceUrl, apiToken, projectCollectionPageUrl(path, filters, i + 2)),
+    ),
+  );
+  for (const page of pages) elements.push(...(page._embedded?.elements ?? []));
 
-  while (true) {
-    const params = new URLSearchParams({
-      offset: String(offset),
-      pageSize: String(PROJECT_COLLECTION_PAGE_SIZE),
-      filters: JSON.stringify(filters),
-    });
-    const page = await openProjectGet<HalCollection<T>>(instanceUrl, apiToken, `${path}?${params.toString()}`);
-    const pageElements = page._embedded?.elements ?? [];
-    elements.push(...pageElements);
-
-    if (pageElements.length === 0 || elements.length >= page.total) return elements;
-    offset += 1;
-  }
+  return elements;
 }
 
 type WorkPackageFilter = Record<string, { operator: string; values: string[] }>;

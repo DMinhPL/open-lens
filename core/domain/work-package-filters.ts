@@ -71,8 +71,10 @@ function getPeriodStart(period: Period, now: Date) {
     start.setDate(start.getDate() - daysSinceMonday);
   } else if (period === "month") {
     start.setDate(1);
-  } else {
+  } else if (period === "quarter") {
     start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1);
+  } else {
+    start.setMonth(0, 1);
   }
 
   return start;

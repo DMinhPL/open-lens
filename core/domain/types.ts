@@ -30,7 +30,7 @@ export interface WorkPackage {
   spentHours?: number; // total logged time in hours, from OpenProject's `spentTime` duration
 }
 
-export type Period = "week" | "month" | "quarter";
+export type Period = "week" | "month" | "quarter" | "year";
 
 export interface TrendPoint {
   label: string;
@@ -136,6 +136,31 @@ export interface OpenProjectProjectMember {
 export interface ProjectWorkloadResponse {
   workPackages: WorkPackage[];
   members: OpenProjectProjectMember[];
+}
+
+/**
+ * Per-member rollup of a project's Task/Bug work packages — the Project Manager mode's
+ * equivalent of one row in the single-user Dashboard, but for every assignee on the team.
+ */
+export interface MemberWorkloadStat {
+  memberId: number; // 0 for an assignee with no matching project membership (e.g. left the team)
+  memberName: string;
+  taskCount: number;
+  bugCount: number;
+  openCount: number;
+  closedCount: number;
+  overdueCount: number;
+  totalCount: number;
+}
+
+/** Project-wide totals backing the Project Manager mode's summary stat cards. */
+export interface ProjectOverviewStats {
+  totalCount: number;
+  openCount: number;
+  closedCount: number;
+  overdueCount: number;
+  memberCount: number;
+  completionRate: number; // 0-100, rounded
 }
 
 /** Response shape of `GET /api/settings` — shared between any page that needs to

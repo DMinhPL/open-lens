@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/core/utils";
 import { useAppSelector } from "@/core/store/hooks";
+import { useMode } from "@/core/mode-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch, Workflow, Timer } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, FolderKanban, Settings, Telescope, GitBranch, Workflow, Timer, Gauge } from "lucide-react";
 
-const NAV_ITEMS = [
+const MEMBER_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tickets", label: "Tickets", icon: Ticket },
   { href: "/gantt", label: "Gantt", icon: Timer },
@@ -18,9 +19,19 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+/** Project Manager mode's nav — team-wide pages only; single-user pages (Tickets/Gantt/...) don't apply here. */
+const MANAGER_NAV_ITEMS = [
+  { href: "/pm", label: "Team Overview", icon: Gauge },
+  { href: "/workload", label: "Workload", icon: Users },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   const currentUser = useAppSelector((state) => state.user.info);
+  const { mode } = useMode();
+  const navItems = mode === "manager" ? MANAGER_NAV_ITEMS : MEMBER_NAV_ITEMS;
 
   return (
     <aside className="glass-sidebar sticky top-0 hidden h-screen w-56 shrink-0 overflow-y-auto border-r border-r-transparent text-sidebar-foreground md:flex md:flex-col">
@@ -29,7 +40,7 @@ export function Sidebar() {
         <span className="font-semibold">OpenLens</span>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (

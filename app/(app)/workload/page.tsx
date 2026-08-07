@@ -45,7 +45,7 @@ export default function WorkloadPage() {
         openOnly,
         groupBy,
         groupBy === "assignee" ? members.map((member) => member.name) : [],
-      ),
+      ).filter((entry) => entry.taskCount + entry.bugCount > 0),
     [openOnly, groupBy, members],
   );
 

@@ -12,6 +12,7 @@ import {
   computeTypeBreakdown,
   computeDailyTypeTrend,
   computeTypeThroughput,
+  computeYearlyTrend,
   computeBurnup,
   computeCumulativeFlow,
   countStuckTickets,
@@ -66,24 +67,28 @@ const TREND_TITLES: Record<Period, string> = {
   week: "Completed per week",
   month: "Completed per month",
   quarter: "Completed per quarter",
+  year: "Completed per year",
 };
 
 const BURNUP_TITLES: Record<Period, string> = {
   week: "Task & Bug burnup (this week)",
   month: "Task & Bug burnup (this month)",
   quarter: "Task & Bug burnup (this quarter)",
+  year: "Task & Bug burnup (this year)",
 };
 
 const CFD_TITLES: Record<Period, string> = {
   week: "Cumulative flow (this week)",
   month: "Cumulative flow (this month)",
   quarter: "Cumulative flow (this quarter)",
+  year: "Cumulative flow (this year)",
 };
 
 const THROUGHPUT_TITLES: Record<Period, string> = {
   week: "Created vs completed by type (this week)",
   month: "Created vs completed by type (this month)",
   quarter: "Created vs completed by type (this quarter)",
+  year: "Created vs completed by type (this year)",
 };
 
 export default function DashboardPage() {
@@ -98,6 +103,7 @@ export default function DashboardPage() {
   const trend = useMemo(() => {
     if (period === "week") return computeWeeklyTrend(workPackages, 12);
     if (period === "quarter") return computeQuarterlyTrend(workPackages, 4);
+    if (period === "year") return computeYearlyTrend(workPackages, 3);
     return computeMonthlyTrend(workPackages, 6);
   }, [workPackages, period]);
 

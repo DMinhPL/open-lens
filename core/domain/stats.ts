@@ -48,6 +48,21 @@ function addQuarters(date: Date, quarters: number): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + quarters * 3, 1));
 }
 
+function startOfYear(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+}
+
+function addYears(date: Date, years: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear() + years, date.getUTCMonth(), 1));
+}
+
+function periodStart(now: Date, period: Period): Date {
+  if (period === "week") return startOfWeek(now);
+  if (period === "quarter") return startOfQuarter(now);
+  if (period === "year") return startOfYear(now);
+  return startOfMonth(now);
+}
+
 export function isWorkPackageCompleted(wp: WorkPackage): boolean {
   return (wp.percentDone === 100 && wp.statusLabel?.trim().toLowerCase() === "done") || wp.statusLabel?.trim().toLowerCase() === "done";
 }
@@ -120,6 +135,24 @@ export function computeQuarterlyTrend(workPackages: WorkPackage[], numQuarters =
       label: `Q${q} ${qStart.getUTCFullYear()}`,
       periodStart: qStart.toISOString(),
       completed: closedInRange(workPackages, qStart, qEnd),
+    });
+  }
+
+  return points;
+}
+
+export function computeYearlyTrend(workPackages: WorkPackage[], numYears = 3): TrendPoint[] {
+  const now = new Date();
+  const currentYearStart = startOfYear(now);
+  const points: TrendPoint[] = [];
+
+  for (let i = numYears - 1; i >= 0; i--) {
+    const yearStart = addYears(currentYearStart, -i);
+    const yearEnd = addYears(currentYearStart, -i + 1);
+    points.push({
+      label: `${yearStart.getUTCFullYear()}`,
+      periodStart: yearStart.toISOString(),
+      completed: closedInRange(workPackages, yearStart, yearEnd),
     });
   }
 
@@ -263,8 +296,7 @@ export function computeTypeThroughput(workPackages: WorkPackage[], period: Perio
 export function computeBurnup(workPackages: WorkPackage[], period: Period): BurnupPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
   const now = new Date();
-  const start =
-    period === "week" ? startOfWeek(now) : period === "quarter" ? startOfQuarter(now) : startOfMonth(now);
+  const start = periodStart(now, period);
   const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const points: BurnupPoint[] = [];
@@ -295,8 +327,7 @@ export function computeBurnup(workPackages: WorkPackage[], period: Period): Burn
 export function computeCumulativeFlow(workPackages: WorkPackage[], period: Period): CfdPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
   const now = new Date();
-  const start =
-    period === "week" ? startOfWeek(now) : period === "quarter" ? startOfQuarter(now) : startOfMonth(now);
+  const start = periodStart(now, period);
   const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const points: CfdPoint[] = [];
   for (let i = 0; i < numDays; i++) {
