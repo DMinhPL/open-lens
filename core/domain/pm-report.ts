@@ -3,11 +3,13 @@ import { computeMemberWorkload, computeProjectOverview } from "@/core/domain/pm-
 import {
   computeBurnup,
   computeCumulativeFlow,
+  computeCycleTime,
   computeMonthlyTrend,
   computeQuarterlyTrend,
   computeStatusBreakdown,
   computeTaskBugWorkload,
   computeTypeBreakdown,
+  computeWeeklyThroughput,
   computeWeeklyTrend,
   computeYearlyTrend,
 } from "@/core/domain/stats";
@@ -50,6 +52,8 @@ export function computeProjectManagerReport(
     trend,
     burnup: computeBurnup(workPackages, period),
     cfd: computeCumulativeFlow(workPackages, period),
+    throughput: computeWeeklyThroughput(workPackages, period),
+    cycleTime: computeCycleTime(workPackages, period),
     generatedAt: new Date().toISOString(),
   };
 }

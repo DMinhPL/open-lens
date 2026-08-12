@@ -2,7 +2,8 @@
 
 import "@/core/colors/chart-setup";
 import { Line } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { CHART_COLORS } from "@/core/colors/chart-theme";
 import type { BurnupPoint } from "@/core/domain/types";
@@ -73,6 +74,18 @@ export function BurnupChart({ title, data }: BurnupChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Task and Bug burnup"
+            description="Compares cumulative completed work with the total Task and Bug scope."
+          >
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p><strong className="text-foreground">Total scope</strong> increases when Tasks or Bugs are added.</p>
+              <p><strong className="text-foreground">Completed</strong> increases as those tickets finish.</p>
+              <p>The gap between the lines is remaining scope. A narrowing gap indicates convergence toward completion.</p>
+            </div>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         {data.length === 0 ? (

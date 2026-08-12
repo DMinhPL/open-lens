@@ -2,7 +2,8 @@
 
 import "@/core/colors/chart-setup";
 import { Line } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { CHART_COLORS } from "@/core/colors/chart-theme";
 import type { TrendPoint } from "@/core/domain/types";
@@ -58,6 +59,18 @@ export function TrendChart({ title, data }: TrendChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Completion trend"
+            description="Shows how many tickets were completed in each time bucket."
+          >
+            <p className="text-sm text-muted-foreground">
+              The horizontal axis follows the selected weekly, monthly, quarterly, or yearly
+              grouping. Rising values mean more tickets finished during that bucket; this
+              chart measures output volume, not how long each ticket took.
+            </p>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         <Line data={chartData} options={options} />

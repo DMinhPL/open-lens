@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -8,9 +9,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CFD_STAGES, type CfdStage } from "@/core/domain/cfd-stages";
 import { useChartInk } from "@/core/colors/use-chart-colors";
-import { CHART_COLORS } from "@/core/colors/chart-theme";
 import type { CfdPoint } from "@/core/domain/types";
 
 interface CfdChartProps {
@@ -20,21 +22,67 @@ interface CfdChartProps {
 
 export function CfdChart({ title, data }: CfdChartProps) {
   const ink = useChartInk();
-  const backlogColor = CHART_COLORS.brightBlue;
-  const inProcessColor = CHART_COLORS.red;
-  const doneColor = CHART_COLORS.yellow;
+  const [visibleStages, setVisibleStages] = useState<Set<CfdStage>>(
+    () => new Set(CFD_STAGES.map((stage) => stage.key)),
+  );
+
+  function toggleStage(stage: CfdStage) {
+    setVisibleStages((current) => {
+      const next = new Set(current);
+      if (next.has(stage)) next.delete(stage);
+      else next.add(stage);
+      return next;
+    });
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <Card className="cfd-chart">
+      <CardHeader className="cfd-chart__header">
+        <CardTitle className="cfd-chart__title text-sm font-medium">{title}</CardTitle>
+        <CardAction className="cfd-chart__help-action">
+          <ChartHelpDialog
+            title="Cumulative flow stages"
+            description="Each band groups Task and Bug tickets by workflow stage. A widening band can indicate that work is accumulating at that stage."
+          >
+            <div className="cfd-chart__help-dialog-body space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Select a legend label beside the chart to hide or show that band.
+              </p>
+              <dl className="cfd-chart__stage-list space-y-3">
+                {CFD_STAGES.map((stage) => (
+                  <div key={stage.key} className="cfd-chart__stage grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-3">
+                    <dt className="cfd-chart__stage-label flex items-center gap-2 font-medium">
+                      <span
+                        className="cfd-chart__stage-swatch size-3 shrink-0"
+                        style={{ backgroundColor: stage.color }}
+                        aria-hidden="true"
+                      />
+                      {stage.label}
+                    </dt>
+                    <dd className="cfd-chart__stage-description text-muted-foreground">
+                      <p>{stage.description}</p>
+                      <p className="cfd-chart__stage-statuses mt-1 text-xs">
+                        Statuses: {stage.statuses.join(", ")}
+                      </p>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="cfd-chart__approximation-note rounded-md bg-muted p-3 text-xs text-muted-foreground">
+                Approximate: historical points use each ticket&apos;s current status, not its
+                status on that date, because OpenProject does not provide structured bulk
+                status-transition history.
+              </p>
+            </div>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="cfd-chart__content h-64">
         {data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No data</p>
+          <p className="cfd-chart__empty-state text-sm text-muted-foreground">No data</p>
         ) : (
-          <div className="flex h-full min-w-0 items-center gap-3">
-            <div className="h-full min-w-0 flex-1">
+          <div className="cfd-chart__body flex h-full min-w-0 items-center gap-3">
+            <div className="cfd-chart__plot h-full min-w-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
                   <XAxis
@@ -73,40 +121,34 @@ export function CfdChart({ title, data }: CfdChartProps) {
                     labelStyle={{ color: ink.tooltip.titleColor }}
                     itemStyle={{ color: ink.tooltip.bodyColor }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="done"
-                    name="Done"
-                    stackId="cfd"
-                    stroke={doneColor}
-                    fill={doneColor}
-                    isAnimationActive={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="inProgress"
-                    name="In Process"
-                    stackId="cfd"
-                    stroke={inProcessColor}
-                    fill={inProcessColor}
-                    isAnimationActive={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="backlog"
-                    name="Backlog"
-                    stackId="cfd"
-                    stroke={backlogColor}
-                    fill={backlogColor}
-                    isAnimationActive={false}
-                  />
+                  {[...CFD_STAGES]
+                    .reverse()
+                    .filter((stage) => visibleStages.has(stage.key))
+                    .map((stage) => (
+                      <Area
+                        key={stage.key}
+                        type="monotone"
+                        dataKey={stage.key}
+                        name={stage.label}
+                        stackId="cfd"
+                        stroke={stage.color}
+                        fill={stage.color}
+                        isAnimationActive={false}
+                      />
+                    ))}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex shrink-0 flex-col gap-2 text-xs text-muted-foreground">
-              <ChartLegendItem color={backlogColor} label="Backlog" />
-              <ChartLegendItem color={inProcessColor} label="In Process" />
-              <ChartLegendItem color={doneColor} label="Done" />
+            <div className="cfd-chart__legend flex shrink-0 flex-col gap-2 text-xs text-muted-foreground">
+              {CFD_STAGES.map((stage) => (
+                <ChartLegendItem
+                  key={stage.key}
+                  color={stage.color}
+                  label={stage.label}
+                  visible={visibleStages.has(stage.key)}
+                  onToggle={() => toggleStage(stage.key)}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -115,11 +157,34 @@ export function CfdChart({ title, data }: CfdChartProps) {
   );
 }
 
-function ChartLegendItem({ color, label }: { color: string; label: string }) {
+function ChartLegendItem({
+  color,
+  label,
+  visible,
+  onToggle,
+}: {
+  color: string;
+  label: string;
+  visible: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="size-3" style={{ backgroundColor: color }} />
-      <span>{label}</span>
-    </div>
+    <button
+      type="button"
+      className="cfd-chart__legend-item flex items-center gap-2 rounded-sm text-left transition-opacity hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=hidden]:opacity-50"
+      data-state={visible ? "visible" : "hidden"}
+      aria-pressed={visible}
+      aria-label={`${visible ? "Hide" : "Show"} ${label} band`}
+      title={`${visible ? "Hide" : "Show"} ${label} band`}
+      onClick={onToggle}
+    >
+      <span
+        className="cfd-chart__legend-swatch size-3 transition-opacity"
+        style={{ backgroundColor: color, opacity: visible ? 1 : 0.25 }}
+        aria-hidden="true"
+      />
+      <span className="cfd-chart__legend-label">{label}</span>
+      <span className="sr-only">{visible ? "Visible" : "Hidden"}</span>
+    </button>
   );
 }

@@ -3,7 +3,8 @@
 import "@/core/colors/chart-setup";
 import { useMemo } from "react";
 import { Doughnut } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { useAppSelector } from "@/core/store/hooks";
 import { buildStatusColorMap, getStatusColor } from "@/core/colors/status-colors";
@@ -48,6 +49,18 @@ export function StatusDonut({ data }: StatusDonutProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Status breakdown</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Status breakdown"
+            description="Shows the current distribution of tickets across the project workflow statuses."
+          >
+            <p className="text-sm text-muted-foreground">
+              Each slice is one status. Larger slices contain more tickets; the legend uses
+              the colors configured by OpenProject. This is a current snapshot, not a history
+              of status changes.
+            </p>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         {filtered.length === 0 ? (

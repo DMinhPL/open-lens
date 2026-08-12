@@ -3,7 +3,8 @@
 import "@/core/colors/chart-setup";
 import { useMemo } from "react";
 import { Bar } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { getTypeColor } from "@/core/colors/type-colors";
 import type { DailyTypeTrendPoint } from "@/core/domain/types";
@@ -65,6 +66,18 @@ export function DailyTypeTrendChart({ data }: DailyTypeTrendChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Tickets created per day, by type</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Tickets created per day, by type"
+            description="Shows daily incoming work, split by ticket type, for the latest 14 days."
+          >
+            <p className="text-sm text-muted-foreground">
+              Each stacked bar is one day. Its total height is the number of tickets created;
+              colored segments show which types contributed to that intake. Spikes highlight
+              days when demand entered the system unusually quickly.
+            </p>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         {types.length === 0 ? (

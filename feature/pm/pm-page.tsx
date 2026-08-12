@@ -6,7 +6,8 @@ import { useGetProjectManagerReportQuery } from "@/core/api/api-slice";
 import { useFilters } from "@/core/filters-context";
 import { StatCard } from "@/feature/dashboard/components/stat-card";
 import { MemberBreakdownTable } from "@/feature/pm/components/member-breakdown-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, CheckCircle2, CircleDot, LoaderCircle, Users } from "lucide-react";
 import type { Period } from "@/core/domain/types";
@@ -35,6 +36,20 @@ const CfdChart = dynamic(
   () => import("@/feature/dashboard/components/cfd-chart").then((module) => module.CfdChart),
   { loading: () => <Skeleton className="h-80 w-full" />, ssr: false },
 );
+const ThroughputChart = dynamic(
+  () =>
+    import("@/feature/dashboard/components/throughput-chart").then(
+      (module) => module.ThroughputChart,
+    ),
+  { loading: () => <Skeleton className="h-80 w-full" />, ssr: false },
+);
+const CycleTimeChart = dynamic(
+  () =>
+    import("@/feature/dashboard/components/cycle-time-chart").then(
+      (module) => module.CycleTimeChart,
+    ),
+  { loading: () => <Skeleton className="h-80 w-full" />, ssr: false },
+);
 
 const TREND_TITLES: Record<Period, string> = {
   week: "Completed per week",
@@ -55,6 +70,20 @@ const CFD_TITLES: Record<Period, string> = {
   month: "Cumulative flow (this month)",
   quarter: "Cumulative flow (this quarter)",
   year: "Cumulative flow (this year)",
+};
+
+const THROUGHPUT_TITLES: Record<Period, string> = {
+  week: "Weekly throughput (this week)",
+  month: "Weekly throughput (this month)",
+  quarter: "Weekly throughput (this quarter)",
+  year: "Weekly throughput (this year)",
+};
+
+const CYCLE_TIME_TITLES: Record<Period, string> = {
+  week: "Task & Bug cycle time (this week)",
+  month: "Task & Bug cycle time (this month)",
+  quarter: "Task & Bug cycle time (this quarter)",
+  year: "Task & Bug cycle time (this year)",
 };
 
 /** Project Manager mode backed by a compact, server-computed report. */
@@ -149,6 +178,18 @@ export default function PmPage() {
           <CardTitle className="text-sm font-medium">
             Open Task and Bug workload for {projectName} by assignee
           </CardTitle>
+          <CardAction>
+            <ChartHelpDialog
+              title="Task and Bug workload by assignee"
+              description="Compares the Task and Bug workload assigned to each project member."
+            >
+              <p className="text-sm text-muted-foreground">
+                Each horizontal bar represents an assignee. Its Task and Bug segments show
+                the mix and total volume of work attributed to that person. Longer bars
+                indicate heavier workload, but do not account for ticket size or complexity.
+              </p>
+            </ChartHelpDialog>
+          </CardAction>
         </CardHeader>
         <CardContent>
           {loading ? <Skeleton className="h-64 w-full" /> : <WorkloadChart data={report?.workload ?? []} />}
@@ -185,6 +226,29 @@ export default function PmPage() {
             <Skeleton className="h-80 w-full" />
           ) : (
             <CfdChart title={CFD_TITLES[period]} data={report?.cfd ?? []} />
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          {loading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : (
+            <ThroughputChart
+              title={THROUGHPUT_TITLES[period]}
+              data={report?.throughput ?? []}
+            />
+          )}
+        </div>
+        <div>
+          {loading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : (
+            <CycleTimeChart
+              title={CYCLE_TIME_TITLES[period]}
+              data={report?.cycleTime ?? []}
+            />
           )}
         </div>
       </div>

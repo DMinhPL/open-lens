@@ -2,7 +2,8 @@
 
 import "@/core/colors/chart-setup";
 import { Bar } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { CHART_COLORS } from "@/core/colors/chart-theme";
 import type { TypeThroughput } from "@/core/domain/types";
@@ -64,6 +65,18 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Created versus completed by type"
+            description="Compares incoming and finished tickets for each type during the selected period."
+          >
+            <p className="text-sm text-muted-foreground">
+              When Created is higher than Completed, that type&apos;s queue may be growing. When
+              Completed is higher, the team is reducing existing work. The two counts refer
+              to events in the period, so completed tickets may have been created earlier.
+            </p>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         {data.length === 0 ? (

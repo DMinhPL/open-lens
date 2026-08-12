@@ -67,12 +67,34 @@ export interface BurnupPoint {
   total: number; // cumulative Task/Bug tickets in scope (created) as of this day
 }
 
+export interface ThroughputPoint {
+  label: string;
+  date: string; // ISO date, start of the weekly bucket (UTC)
+  completedCount: number;
+}
+
+export interface CycleTimePoint {
+  id: number;
+  label: string;
+  completedDate: string;
+  cycleTimeDays: number;
+  type: string;
+  statusLabel?: string;
+  assignee: string;
+  project: string;
+  createdAt: string;
+}
+
 export interface CfdPoint {
   label: string; // e.g. "7/24"
   date: string; // ISO date, start of day (UTC)
-  backlog: number; // cumulative Task/Bug tickets not yet started
-  inProgress: number; // cumulative Task/Bug tickets in progress or on hold
-  done: number; // cumulative Task/Bug tickets completed as of this day
+  // Stage keys and their display metadata are defined by CFD_STAGES in cfd-stages.ts.
+  backlog: number;
+  ready: number;
+  development: number;
+  review: number;
+  testing: number;
+  done: number;
 }
 
 export interface WorkloadEntry {
@@ -173,6 +195,8 @@ export interface ProjectManagerReport {
   trend: TrendPoint[];
   burnup: BurnupPoint[];
   cfd: CfdPoint[];
+  throughput: ThroughputPoint[];
+  cycleTime: CycleTimePoint[];
   generatedAt: string;
 }
 

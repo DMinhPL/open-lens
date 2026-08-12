@@ -1,12 +1,14 @@
 import type {
   BurnupPoint,
   CfdPoint,
+  CycleTimePoint,
   DailyTypeTrendPoint,
   DashboardStats,
   Period,
   StatusBreakdown,
   TaskBugWorkloadEntry,
   TrendPoint,
+  ThroughputPoint,
   TypeBreakdown,
   TypeThroughput,
   WorkPackage,
@@ -14,7 +16,10 @@ import type {
   WorkloadGroupBy,
 } from "@/core/domain/types";
 import { DUMMY_STATUS_NAMES } from "@/core/colors/status-colors";
+import { CFD_STAGE_BY_STATUS, type CfdStage } from "@/core/domain/cfd-stages";
 import { wasCreatedInPeriod } from "@/core/domain/work-package-filters";
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -329,9 +334,19 @@ export function computeBurnup(workPackages: WorkPackage[], period: Period): Burn
   return points;
 }
 
+function classifyCfdStage(wp: WorkPackage): CfdStage {
+  const statusLabel = wp.statusLabel?.trim().toLowerCase();
+  const stage = statusLabel ? CFD_STAGE_BY_STATUS[statusLabel] : undefined;
+  if (stage) return stage;
+  return isWorkPackageCompleted(wp) ? "done" : "backlog";
+}
+
 /**
  * Cumulative flow series for Task/Bug tickets, sampled daily from the start of
- * the selected period through today.
+ * the selected period through today. Splits the workflow into six stages
+ * (backlog → ready → development → review → testing/acceptance → done) so
+ * bottlenecks between coding, review, and QA are visible instead of hidden
+ * inside a single "In Progress" band.
  */
 export function computeCumulativeFlow(workPackages: WorkPackage[], period: Period): CfdPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
@@ -342,34 +357,81 @@ export function computeCumulativeFlow(workPackages: WorkPackage[], period: Perio
   for (let i = 0; i < numDays; i++) {
     const dayStart = addDays(start, i);
     const dayEnd = addDays(dayStart, 1);
-    let backlog = 0;
-    let inProgress = 0;
-    let done = 0;
+    const counts: Record<CfdStage, number> = {
+      backlog: 0,
+      ready: 0,
+      development: 0,
+      review: 0,
+      testing: 0,
+      done: 0,
+    };
 
     for (const wp of relevant) {
       if (new Date(wp.createdAt) >= dayEnd) continue;
-
-      const completed =
-        isWorkPackageCompleted(wp) && new Date(wp.closedAt ?? wp.updatedAt) < dayEnd;
-      if (completed) {
-        done++;
-      } else if (wp.statusLabel === "In Progress" || wp.statusLabel === "On hold") {
-        inProgress++;
-      } else if (wp.statusLabel === "Open") {
-        backlog++;
-      }
+      counts[classifyCfdStage(wp)]++;
     }
 
     points.push({
       label: `${dayStart.getUTCDate()}/${dayStart.getUTCMonth() + 1}`,
       date: dayStart.toISOString(),
-      backlog,
-      inProgress,
-      done,
+      ...counts,
     });
   }
 
   return points;
+}
+
+/** Completed Task/Bug tickets grouped into seven-day buckets within the selected period. */
+export function computeWeeklyThroughput(
+  workPackages: WorkPackage[],
+  period: Period,
+): ThroughputPoint[] {
+  const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
+  const now = new Date();
+  const start = periodStart(now, period);
+  const points: ThroughputPoint[] = [];
+
+  for (let bucketStart = start; bucketStart <= now; bucketStart = addDays(bucketStart, 7)) {
+    const bucketEnd = addDays(bucketStart, 7);
+    points.push({
+      label: `${bucketStart.getUTCDate()}/${bucketStart.getUTCMonth() + 1}`,
+      date: bucketStart.toISOString(),
+      completedCount: closedInRange(relevant, bucketStart, bucketEnd),
+    });
+  }
+
+  return points;
+}
+
+function daysBetween(start: Date, end: Date): number {
+  return Math.max(0, Math.round(((end.getTime() - start.getTime()) / MS_PER_DAY) * 10) / 10);
+}
+
+/** Cycle time is an approximation from creation to close, not true time-in-status. */
+export function computeCycleTime(workPackages: WorkPackage[], period: Period): CycleTimePoint[] {
+  const start = periodStart(new Date(), period);
+  return workPackages
+    .filter(
+      (wp) =>
+        (wp.type === "Task" || wp.type === "Bug") &&
+        isWorkPackageCompleted(wp) &&
+        new Date(wp.closedAt ?? wp.updatedAt) >= start,
+    )
+    .map((wp) => {
+      const completedDate = wp.closedAt ?? wp.updatedAt;
+      return {
+        id: wp.id,
+        label: wp.subject || `#${wp.id}`,
+        completedDate,
+        cycleTimeDays: daysBetween(new Date(wp.createdAt), new Date(completedDate)),
+        type: wp.type,
+        statusLabel: wp.statusLabel,
+        assignee: wp.assignee,
+        project: wp.project,
+        createdAt: wp.createdAt,
+      };
+    })
+    .sort((a, b) => a.completedDate.localeCompare(b.completedDate));
 }
 
 /** Open (non-Closed) tickets whose `updatedAt` is older than `thresholdDays`, oldest first. */

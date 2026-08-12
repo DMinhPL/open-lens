@@ -2,7 +2,8 @@
 
 import "@/core/colors/chart-setup";
 import { Doughnut } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useChartInk } from "@/core/colors/use-chart-colors";
 import { getTypeColor } from "@/core/colors/type-colors";
 import type { TypeBreakdown } from "@/core/domain/types";
@@ -44,6 +45,17 @@ export function TypeDonut({ data }: TypeDonutProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Ticket type overview</CardTitle>
+        <CardAction>
+          <ChartHelpDialog
+            title="Ticket type overview"
+            description="Shows how the currently selected tickets are divided by type."
+          >
+            <p className="text-sm text-muted-foreground">
+              Each slice represents a ticket type such as Task, Bug, or User Story. Compare
+              slice sizes to see which kinds of work dominate the selected scope.
+            </p>
+          </ChartHelpDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="h-64">
         {filtered.length === 0 ? (
