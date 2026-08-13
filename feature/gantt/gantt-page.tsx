@@ -322,8 +322,8 @@ function GanttRow({
   const deadlineOffsetPx = getDeadlineOffsetPx(workPackage, range);
   const color = getStatusColor(statusName, colorMap);
   const barDueDate = getEffectiveDueDate(workPackage);
-  const summary = `${workPackage.subject} — ${statusName} — ${formatDateDDMMYYYY(workPackage.startDate)} → ${formatDateDDMMYYYY(
-    workPackage.customField25,
+  const summary = `${workPackage.subject} — ${statusName} — ${formatDateDDMMYYYY(workPackage.createdAt)} → ${formatDateDDMMYYYY(
+    barDueDate,
   )} — ${workPackage.percentDone}% done${overdue ? " — overdue" : ""}`;
 
   return (
@@ -343,7 +343,7 @@ function GanttRow({
           <span className="gantt-task-subject line-clamp-1 text-sm font-medium">{workPackage.subject}</span>
         </span>
         <span className="gantt-task-meta text-xs text-muted-foreground">
-          {statusName} · {formatDateDDMMYYYY(workPackage.startDate)} → {formatDateDDMMYYYY(workPackage.customField25)}
+          {statusName} · {formatDateDDMMYYYY(workPackage.createdAt)} → {formatDateDDMMYYYY(barDueDate)}
         </span>
       </button>
       <div className="gantt-row-timeline relative" style={{ width: timelineWidthPx }}>
@@ -358,7 +358,7 @@ function GanttRow({
           className="gantt-start-label absolute top-1/2 -translate-x-full -translate-y-1/2 pr-1.5 text-[10px] whitespace-nowrap text-muted-foreground"
           style={{ left: geometry.left }}
         >
-          {formatDateDDMMYYYY(workPackage.startDate)}
+          {formatDateDDMMYYYY(workPackage.createdAt)}
         </span>
         <button
           type="button"

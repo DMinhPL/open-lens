@@ -75,7 +75,7 @@ function isFinishedStatus(statusName: string): boolean {
  * only when neither date is set — such tasks can't be placed on a timeline at all.
  */
 export function getTaskSpan(workPackage: WorkPackage, now = new Date()): TaskSpan | null {
-  const rawStart = workPackage.startDate || undefined;
+  const rawStart = workPackage.createdAt || undefined;
   const rawEnd = getEffectiveDueDate(workPackage);
   if (!rawStart && !rawEnd) return null;
 
