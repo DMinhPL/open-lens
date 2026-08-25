@@ -24,7 +24,7 @@ export function parseDateOnly(value: string): Date {
 }
 
 /** Status names treated as "actually completed" for {@link getEffectiveDueDate}'s purposes. */
-const COMPLETION_STATUS_NAMES = new Set(["done", "resolved", "developed", "confirmed"]);
+const COMPLETION_STATUS_NAMES = new Set(["done", "resolved", "developed", "confirmed", "cancelled", "closed"]);
 
 /**
  * True once a status name is one of the completion states (done/resolved/developed/confirmed) —
@@ -39,16 +39,19 @@ export function isCompletionStatus(statusName: string): boolean {
  * The due date to actually use for a task, in favor of the merely-planned one. We don't keep a
  * history of status transitions, so once a task reaches a completion status its `updatedAt`
  * (the most recent change) is the closest signal we have to when it was actually finished —
- * that replaces the originally planned `dueDate`/`derivedDueDate` wherever a due date is shown
+ * that replaces the originally planned `customField25`/`derivedDueDate` wherever a due date is shown
  * or measured. Only overrides when a planned due date already existed (so a task that was never
  * scheduled doesn't suddenly gain one just from being marked done).
  */
 export function getEffectiveDueDate(workPackage: WorkPackage): string | undefined {
-  const plannedEnd = workPackage.dueDate || workPackage.derivedDueDate || undefined;
-  if (!plannedEnd) return undefined;
+  const plannedEnd = workPackage.customField25 || workPackage.derivedDueDate || undefined;
 
-  const statusName = workPackage.statusLabel ?? workPackage.status;
-  return isCompletionStatus(statusName) ? workPackage.updatedAt : plannedEnd;
+  if (plannedEnd) {
+    return plannedEnd;
+  } else {
+    const statusName = workPackage.statusLabel ?? workPackage.status;
+    return isCompletionStatus(statusName) ? workPackage.updatedAt : plannedEnd;
+  }
 }
 
 /** Status names, beyond {@link isCompletionStatus}, that also mean a task won't move further. */
@@ -79,9 +82,22 @@ export function getTaskSpan(workPackage: WorkPackage, now = new Date()): TaskSpa
   const rawEnd = getEffectiveDueDate(workPackage);
   if (!rawStart && !rawEnd) return null;
 
+  if (workPackage.subject.includes('ceCardPage >> Default fields on Starter List')) {
+    console.log({
+      rawStart,
+      rawEnd,
+      workPackage
+    })
+  }
   const start = rawStart ? parseDateOnly(rawStart) : undefined;
   let end = rawEnd ? parseDateOnly(rawEnd) : undefined;
 
+  if (workPackage.subject.includes('ceCardPage >> Default fields on Starter List')) {
+    console.log({
+      start,
+      end
+    })
+  }
   const statusName = workPackage.statusLabel ?? workPackage.status;
   if (start && !end && !isFinishedStatus(statusName)) {
     const today = startOfDay(now);
@@ -89,6 +105,7 @@ export function getTaskSpan(workPackage: WorkPackage, now = new Date()): TaskSpa
   }
 
   if (start && end) return end < start ? { start: end, end: start } : { start, end };
+
   return { start: (start ?? end) as Date, end: (end ?? start) as Date };
 }
 
