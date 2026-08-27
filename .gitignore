@@ -50,5 +50,7 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 KNOWNS.md
+GEMINI.md
+OPENCODE.md
 
 .mcp.json

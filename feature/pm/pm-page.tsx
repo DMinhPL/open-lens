@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { skipToken } from "@reduxjs/toolkit/query/react";
-import { useGetProjectManagerReportQuery } from "@/core/api/api-slice";
+import { useEffect, useState } from "react";
+import { usePmReportStream } from "@/feature/pm/use-pm-report-stream";
 import { useFilters } from "@/core/filters-context";
 import { StatCard } from "@/feature/dashboard/components/stat-card";
 import { MemberBreakdownTable } from "@/feature/pm/components/member-breakdown-table";
@@ -92,19 +92,30 @@ export default function PmPage() {
   const projectId = project === "all" ? null : Number(project);
   const hasValidProject = projectId !== null && Number.isSafeInteger(projectId) && projectId > 0;
   const {
-    data: report,
-    currentData: currentReport,
+    report,
+    receivedCount,
+    totalCount,
+    isComplete,
     isLoading,
-    isFetching,
-    error: queryError,
-  } = useGetProjectManagerReportQuery(
-    hasValidProject ? { projectId, period } : skipToken,
-  );
-  const error = queryError ? ((queryError as { message?: string }).message ?? "Request failed") : null;
+    error,
+  } = usePmReportStream(hasValidProject ? { projectId, period } : null);
   const projectName = projects.find((candidate) => candidate.id === projectId)?.name ?? "Selected project";
-  const loading = !report && (isLoading || isFetching);
-  const transitioning = isFetching && Boolean(report) && !currentReport;
-  const refreshing = isFetching && Boolean(currentReport);
+  const loading = !report && isLoading;
+  // True once we have a partial report but the stream hasn't finished delivering every page yet.
+  const streaming = Boolean(report) && !isComplete && !error;
+  const statusActive = loading || streaming;
+  const [isStatusVisible, setIsStatusVisible] = useState(statusActive);
+
+  useEffect(() => {
+    if (statusActive) {
+      const timeoutId = window.setTimeout(() => setIsStatusVisible(true), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+    if (!isStatusVisible) return;
+
+    const timeoutId = window.setTimeout(() => setIsStatusVisible(false), 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [isStatusVisible, statusActive]);
 
   if (!hasValidProject) {
     return (
@@ -124,35 +135,33 @@ export default function PmPage() {
   }
 
   return (
-    <div className="relative flex flex-col gap-6" aria-busy={isFetching}>
-      {transitioning ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="absolute inset-0 z-50 flex justify-center bg-background/75 backdrop-blur-[2px]"
-        >
-          <div className="sticky top-24 mt-24 flex h-fit items-center gap-2 rounded-md border bg-background px-4 py-3 text-sm font-medium shadow-lg">
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-            Loading {period} report…
-          </div>
-        </div>
-      ) : null}
+    <div className="relative flex flex-col gap-6" aria-busy={loading || streaming}>
       {loading ? (
         <div
           role="status"
           aria-live="polite"
-          className="chart-loading flex items-center gap-2 text-sm text-muted-foreground"
+          aria-atomic="true"
+          className={`fixed right-0 top-20 z-50 flex max-w-sm items-center gap-3 rounded-bl-2xl rounded-tl-2xl border border-primary/30 bg-background px-4 py-3 text-sm font-medium text-foreground shadow-lg ${statusActive ? "animate-in slide-in-from-right-5 fade-in-0 duration-200" : "animate-out slide-out-to-right-5 fade-out-0 duration-200"}`}
         >
           <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
           Loading {period} report…
         </div>
-      ) : refreshing ? (
-        <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
-          Refreshing {period} report…
-        </p>
+      ) : streaming || isStatusVisible ? (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className={`fixed right-0 top-20 z-50 flex max-w-sm items-center gap-3 rounded-bl-2xl rounded-tl-2xl border border-primary/30 bg-background px-4 py-3 text-sm font-medium text-foreground shadow-lg ${statusActive ? "animate-in slide-in-from-right-5 fade-in-0 duration-200" : "animate-out slide-out-to-right-5 fade-out-0 duration-200"}`}
+        >
+          <LoaderCircle className="size-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
+          <div>
+            <span className="shrink-0">Updating project report</span>
+            <p>Loading… {receivedCount.toLocaleString()} {totalCount > 0 ? ` of ${totalCount.toLocaleString()}` : ""} work packages</p>
+          </div>
+        </div>
       ) : null}
       {error && report ? (
-        <p className="text-sm text-destructive">Refresh failed; showing cached report: {error}</p>
+        <p className="text-sm text-destructive">Refresh failed; showing partial/cached report: {error}</p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

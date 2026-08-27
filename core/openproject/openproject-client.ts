@@ -25,6 +25,7 @@ import {
   fetchWorkPackages,
   fetchWorkPackagesForCurrentUser,
   fetchWorkPackagesForProject,
+  fetchWorkPackagesForProjectChunked,
   fetchProjectMembers,
   fetchCurrentUser,
   fetchProjectsForUser,
@@ -63,6 +64,46 @@ export async function getWorkPackagesForProject(projectId: number): Promise<Work
   }
 
   return fetchWorkPackagesForProject(settings.instanceUrl, settings.apiToken, projectId);
+}
+
+/**
+ * Chunked/progressive counterpart of {@link getWorkPackagesForProject}, added for the streaming
+ * PM report endpoint. In dummy mode, splits the fixture result into a few synthetic chunks (spaced
+ * out with microtask/timeout delays) so the progressive-loading UI path is exercisable without a
+ * live instance; in live mode, delegates to {@link fetchWorkPackagesForProjectChunked}. Does not
+ * change the behavior of {@link getWorkPackagesForProject} itself.
+ */
+export async function getWorkPackagesForProjectChunked(
+  projectId: number,
+  onChunk: (newElements: WorkPackage[], receivedCount: number, total: number) => void | Promise<void>,
+  signal?: AbortSignal,
+): Promise<WorkPackage[]> {
+  const settings = await getOpSettings();
+
+  if (settings.useDummyData || !settings.instanceUrl || !settings.apiToken) {
+    const all = getDummyWorkPackagesForProject(projectId);
+    const total = all.length;
+    if (total === 0) {
+      await onChunk([], 0, 0);
+      return all;
+    }
+
+    const chunkCount = Math.min(3, total);
+    const chunkSize = Math.ceil(total / chunkCount);
+    let received = 0;
+    for (let i = 0; i < total; i += chunkSize) {
+      if (signal?.aborted) return all.slice(0, received);
+      // Space chunks out on the macrotask queue so the client can observe them as distinct SSE frames.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (signal?.aborted) return all.slice(0, received);
+      const chunk = all.slice(i, i + chunkSize);
+      received += chunk.length;
+      await onChunk(chunk, received, total);
+    }
+    return all;
+  }
+
+  return fetchWorkPackagesForProjectChunked(settings.instanceUrl, settings.apiToken, projectId, onChunk, signal);
 }
 
 /** Returns direct user members visible to the caller for one project. */
