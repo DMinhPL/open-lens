@@ -59,7 +59,6 @@ export default function TicketsPage() {
   const { settings } = useOpSettings();
   const [search, setSearch] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [priority, setPriority] = useState<string>("all");
   const statuses = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.statusLabel ?? wp.status))).sort(),
@@ -67,10 +66,6 @@ export default function TicketsPage() {
   );
   const priorities = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.priorityLabel ?? wp.priority))).sort(),
-    [workPackages],
-  );
-  const types = useMemo(
-    () => Array.from(new Set(workPackages.map((wp) => wp.type))).sort(),
     [workPackages],
   );
 
@@ -83,21 +78,14 @@ export default function TicketsPage() {
           ? true
           : selectedStatuses.includes(wp.statusLabel ?? wp.status),
       )
-      .filter((wp) => (selectedTypes.length === 0 ? true : selectedTypes.includes(wp.type)))
       .filter((wp) => (priority === "all" ? true : (wp.priorityLabel ?? wp.priority) === priority))
       .filter((wp) => wp.subject.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [workPackages, project, period, search, selectedStatuses, selectedTypes, priority]);
+  }, [workPackages, project, period, search, selectedStatuses, priority]);
 
   function toggleStatus(value: string, checked: boolean) {
     setSelectedStatuses((previous) =>
       checked ? [...previous, value] : previous.filter((status) => status !== value),
-    );
-  }
-
-  function toggleType(value: string, checked: boolean) {
-    setSelectedTypes((previous) =>
-      checked ? [...previous, value] : previous.filter((type) => type !== value),
     );
   }
 
@@ -142,34 +130,6 @@ export default function TicketsPage() {
                 onCheckedChange={(checked) => toggleStatus(s, checked)}
               >
                 {s}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-40 justify-start font-normal"
-              aria-label="Filter by type"
-            >
-              {selectedTypes.length === 0
-                ? "All types"
-                : selectedTypes.length === 1
-                  ? selectedTypes[0]
-                  : `${selectedTypes.length} types`}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {types.map((type) => (
-              <DropdownMenuCheckboxItem
-                key={type}
-                checked={selectedTypes.includes(type)}
-                onSelect={(event) => event.preventDefault()}
-                onCheckedChange={(checked) => toggleType(type, checked)}
-              >
-                {type}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
