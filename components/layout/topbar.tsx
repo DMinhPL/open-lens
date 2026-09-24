@@ -15,8 +15,8 @@ export function Topbar() {
   const { toggle } = useSidebar();
 
   return (
-    <header className="glass sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-b-transparent px-4 md:px-6">
-      <div className="flex items-center gap-3">
+    <header className="glass sticky top-0 z-30 flex min-h-14 flex-col gap-2 border-b border-b-transparent px-4 py-2 md:z-50 md:h-14 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0 md:px-6">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <button
           type="button"
           onClick={toggle}
@@ -25,19 +25,24 @@ export function Topbar() {
         >
           <Menu className="size-5" />
         </button>
-        <div className="text-sm text-muted-foreground">
+        <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
           {loading
             ? "Loading work packages…"
             : mode === "manager"
               ? "Project manager overview"
               : "Personal work monitoring"}
         </div>
+        <div className="md:hidden">
+          <ThemeToggle />
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <ModeToggle />
+      <div className="flex min-w-0 items-center gap-2 md:gap-3">
+        <div className="shrink-0">
+          <ModeToggle />
+        </div>
         {/* Project Selector:  */}
         <Select value={project} onValueChange={setProject}>
-          <SelectTrigger size="sm" className="w-44">
+          <SelectTrigger size="sm" className="min-w-0 flex-1 md:w-44 md:flex-none">
             <SelectValue placeholder="All projects" />
           </SelectTrigger>
           <SelectContent>
@@ -51,7 +56,7 @@ export function Topbar() {
         </Select>
         {/* Period Selector:  */}
         <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <SelectTrigger size="sm" className="w-36">
+          <SelectTrigger size="sm" className="min-w-0 flex-1 md:w-36 md:flex-none">
             <SelectValue placeholder="Period" />
           </SelectTrigger>
           <SelectContent>
@@ -62,7 +67,9 @@ export function Topbar() {
           </SelectContent>
         </Select>
 
-        <ThemeToggle />
+        <div className="hidden md:block">
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
