@@ -86,7 +86,7 @@ export default function GanttPage() {
   }
 
   return (
-    <div className="gantt-page flex h-[calc(100vh-3.5rem-2rem)] flex-col gap-4 md:h-[calc(100vh-3.5rem-3rem)]">
+    <div className="gantt-page flex h-[calc(100vh-5.5rem-2rem)] flex-col gap-4 md:h-[calc(100vh-3.5rem-3rem)]">
       <div className="gantt-toolbar flex shrink-0 flex-wrap items-center gap-3">
         <Input
           placeholder="Search tasks…"
