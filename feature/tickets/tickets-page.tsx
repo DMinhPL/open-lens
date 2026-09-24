@@ -34,6 +34,7 @@ import {
 } from "@/core/domain/work-package-filters";
 import { formatDateDDMMYYYY, cn } from "@/core/utils";
 import { getTypeBadgeStyle } from "@/core/colors/type-colors";
+import { ChevronDownIcon } from "lucide-react";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString(undefined, {
@@ -123,14 +124,17 @@ export default function TicketsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="w-40 justify-start font-normal"
+              className="w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
               aria-label="Filter by status"
             >
-              {selectedStatuses.length === 0
-                ? "All statuses"
-                : selectedStatuses.length === 1
-                  ? selectedStatuses[0]
-                  : `${selectedStatuses.length} statuses`}
+              <span className="min-w-0 truncate">
+                {selectedStatuses.length === 0
+                  ? "All statuses"
+                  : selectedStatuses.length === 1
+                    ? selectedStatuses[0]
+                    : `${selectedStatuses.length} statuses`}
+              </span>
+              <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
@@ -151,14 +155,17 @@ export default function TicketsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="w-40 justify-start font-normal"
+              className="w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
               aria-label="Filter by type"
             >
-              {selectedTypes.length === 0
-                ? "All types"
-                : selectedTypes.length === 1
-                  ? selectedTypes[0]
-                  : `${selectedTypes.length} types`}
+              <span className="min-w-0 truncate">
+                {selectedTypes.length === 0
+                  ? "All types"
+                  : selectedTypes.length === 1
+                    ? selectedTypes[0]
+                    : `${selectedTypes.length} types`}
+              </span>
+              <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
