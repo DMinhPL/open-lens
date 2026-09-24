@@ -11,13 +11,13 @@ interface StatCardProps {
 
 export function StatCard({ title, value, icon: Icon, className }: StatCardProps) {
   return (
-    <Card className={cn(className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className={cn("stat-card", className)}>
+      <CardHeader className="stat-card__header flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className="size-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="stat-card__value text-2xl font-bold">{value}</div>
       </CardContent>
     </Card>
   );

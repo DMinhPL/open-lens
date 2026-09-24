@@ -146,9 +146,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-container flex flex-col gap-6">
+    <div className="dashboard-container dashboard-page flex flex-col gap-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="dashboard-page__stats grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)
         ) : (
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Trend & Status Overview */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="dashboard-page__trend grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {loading ? <Skeleton className="h-80 w-full" /> : <TrendChart title={trendTitle} data={trend} />}
         </div>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Burnup & Cumulative Flow */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="dashboard-page__delivery grid gap-4 lg:grid-cols-2">
         <div>
           {loading ? <Skeleton className="h-80 w-full" /> : <BurnupChart title={burnupTitle} data={burnup} />}
         </div>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Type Distribution & Daily Trend */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="dashboard-page__types grid gap-4 lg:grid-cols-3">
         <div>{loading ? <Skeleton className="h-80 w-full" /> : <TypeDonut data={typeBreakdown} />}</div>
         <div className="lg:col-span-2">
           {loading ? <Skeleton className="h-80 w-full" /> : <DailyTypeTrendChart data={dailyTypeTrend} />}
@@ -210,7 +210,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Tickets */}
-      <div className="rounded-lg border recent-tickets-container">
+      <div className="dashboard-page__recent-tickets rounded-lg border recent-tickets-container">
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <ListTodo className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-medium">My recent tickets</h2>

@@ -19,14 +19,14 @@ export function StuckTicketsList({ tickets, onSelect, maxItems = 5 }: StuckTicke
   const visible = tickets.slice(0, maxItems);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="stuck-tickets-list">
+      <CardHeader className="stuck-tickets-list__header">
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           <AlertTriangle className="size-4 text-muted-foreground" />
           Stuck tickets
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-64 overflow-y-auto p-0">
+      <CardContent className="stuck-tickets-list__content h-64 overflow-y-auto p-0">
         {visible.length === 0 ? (
           <p className="px-6 py-4 text-sm text-muted-foreground">No stuck tickets 🎉</p>
         ) : (

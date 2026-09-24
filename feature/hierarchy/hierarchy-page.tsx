@@ -30,9 +30,9 @@ export default function HierarchyPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-lg border">
-        <div className="flex items-center gap-2 border-b px-4 py-3">
+    <div className="hierarchy-page flex flex-col gap-4">
+      <div className="hierarchy-page__panel rounded-lg border">
+        <div className="hierarchy-page__header flex items-center gap-2 border-b px-4 py-3">
           <GitBranch className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-medium">Ticket hierarchy</h2>
           {!loading && (

@@ -11,11 +11,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <FiltersProvider>
         <SidebarProvider>
           <UserBootstrap />
-          <div className="flex min-h-screen w-full">
+          <div className="app-layout flex min-h-screen w-full">
             <Sidebar />
             <div className="app-layout-main flex min-w-0 flex-1 flex-col">
               <Topbar />
-              <main className="main-layout-container flex-1 overflow-x-hidden p-4 md:p-6">{children}</main>
+              <main className="main-layout-container app-layout__main flex-1 overflow-x-hidden p-4 md:p-6">{children}</main>
             </div>
           </div>
         </SidebarProvider>

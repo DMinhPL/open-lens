@@ -71,8 +71,8 @@ export function BurnupChart({ title, data }: BurnupChartProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="burnup-chart">
+      <CardHeader className="burnup-chart__header">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -87,7 +87,7 @@ export function BurnupChart({ title, data }: BurnupChartProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="burnup-chart__content h-64">
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (

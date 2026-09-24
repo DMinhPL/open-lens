@@ -65,7 +65,7 @@ export function WorkloadChart({ data }: WorkloadChartProps) {
   const height = Math.max(160, data.length * 40);
 
   return (
-    <div style={{ height }}>
+    <div className="workload-chart" style={{ height }}>
       {data.length === 0 ? (
         <p className="text-sm text-muted-foreground">No data</p>
       ) : (

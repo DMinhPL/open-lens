@@ -193,16 +193,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader>
+    <div className="settings-page grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+      <div className="settings-page__primary flex flex-col gap-6">
+        <Card className="settings-page__account-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">Account</CardTitle>
             <CardDescription>Your current OpenProject user and project memberships.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="settings-page__account-content flex flex-col gap-4">
             {infoStatus === "loading" && (
-              <div className="flex flex-col gap-2">
+              <div className="settings-page__loading flex flex-col gap-2">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-4 w-56" />
               </div>
@@ -211,7 +211,7 @@ export default function SettingsPage() {
               <p className="text-sm text-destructive">Could not load account information.</p>
             )}
             {currentUser && (
-              <div className="flex items-center justify-between">
+              <div className="settings-page__account-summary flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{currentUser.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -222,7 +222,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            <div className="flex flex-col gap-2 border-t pt-4">
+            <div className="settings-page__members flex flex-col gap-2 border-t pt-4">
               <p className="text-sm font-medium">Projects you belong to</p>
               {projectsStatus === "loading" && <Skeleton className="h-4 w-24" />}
               {projectsStatus === "failed" && (
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                 <>
                   <p className="text-2xl font-bold">{userProjects.length}</p>
                   {userProjects.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="settings-page__member-list flex flex-wrap gap-2">
                       {userProjects.map((p) => (
                         <Badge key={p.id} variant="outline">
                           {p.name}
@@ -247,12 +247,12 @@ export default function SettingsPage() {
         </Card>
 
         {/* Data source  */}
-        <Card>
-          <CardHeader>
+        <Card className="settings-page__data-source-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">Data source</CardTitle>
             <CardDescription>Toggle between dummy data and your live OpenProject instance.</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center gap-3">
+          <CardContent className="settings-page__data-source-content flex items-center gap-3">
             <Button
               variant={settings?.useDummyData ? "default" : "outline"}
               onClick={() => handleToggleDummy(true)}
@@ -274,12 +274,12 @@ export default function SettingsPage() {
           )}
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="settings-page__default-project-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">Default project</CardTitle>
             <CardDescription>Pre-select a project when the app loads.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="settings-page__default-project-content">
             <Select value={defaultProject} onValueChange={handleDefaultProjectChange}>
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="All projects" />
@@ -296,15 +296,15 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="settings-page__background-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">Background</CardTitle>
             <CardDescription>
               Wallpaper for the liquid-glass theme. Stored in this browser only — pick an
               image under 3MB.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="settings-page__background-content flex flex-col gap-3">
             {wallpaper.dataUrl && (
               // eslint-disable-next-line @next/next/no-img-element -- user-uploaded data URL, not a static asset
               <img
@@ -313,7 +313,7 @@ export default function SettingsPage() {
                 className="h-32 w-full rounded-md border object-cover"
               />
             )}
-            <div className="flex gap-2">
+            <div className="settings-page__background-actions flex gap-2">
               <Input type="file" accept="image/*" onChange={handleWallpaperChange} className="max-w-64" />
               {wallpaper.hasCustom && (
                 <Button type="button" variant="outline" onClick={handleClearWallpaper}>
@@ -329,10 +329,10 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="settings-page__secondary flex flex-col gap-6">
         {/* Open Project connection  */}
-        <Card>
-          <CardHeader>
+        <Card className="settings-page__openproject-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">OpenProject connection</CardTitle>
             <CardDescription>
               {settings?.hasCredentials ? (
@@ -344,9 +344,9 @@ export default function SettingsPage() {
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={handleSaveToken}>
-              <div className="flex flex-col gap-2">
+          <CardContent className="settings-page__connection-content">
+            <form className="settings-page__connection-form flex flex-col gap-4" onSubmit={handleSaveToken}>
+              <div className="settings-page__field flex flex-col gap-2">
                 <Label htmlFor="instanceUrl">Instance URL</Label>
                 <Input
                   id="instanceUrl"
@@ -355,7 +355,7 @@ export default function SettingsPage() {
                   onChange={(e) => setInstanceUrl(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="settings-page__field flex flex-col gap-2">
                 <Label htmlFor="apiToken">API token</Label>
                 <Input
                   id="apiToken"
@@ -365,7 +365,7 @@ export default function SettingsPage() {
                   onChange={(e) => setApiToken(e.target.value)}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="settings-page__form-actions flex gap-2">
                 <Button type="submit" disabled={saving}>
                   {saving ? "Saving…" : "Save token"}
                 </Button>
@@ -380,8 +380,8 @@ export default function SettingsPage() {
         </Card>
 
         {/* Make Connection Settings  */}
-        <Card>
-          <CardHeader>
+        <Card className="settings-page__make-card">
+          <CardHeader className="settings-page__section-header">
             <CardTitle className="text-sm font-medium">Make.com connection</CardTitle>
             <CardDescription>
               {make.hasCredentials ? (
@@ -400,9 +400,9 @@ export default function SettingsPage() {
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={handleSaveMakeSettings}>
-              <div className="flex flex-col gap-2">
+          <CardContent className="settings-page__connection-content">
+            <form className="settings-page__connection-form flex flex-col gap-4" onSubmit={handleSaveMakeSettings}>
+              <div className="settings-page__field flex flex-col gap-2">
                 <Label htmlFor="makeWebhookUrl">Webhook URL</Label>
                 <Input
                   id="makeWebhookUrl"
@@ -411,7 +411,7 @@ export default function SettingsPage() {
                   onChange={(e) => setWebhookUrlInput(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="settings-page__field flex flex-col gap-2">
                 <Label htmlFor="makeApiKey">Make Webhook API key</Label>
                 <Input
                   id="makeApiKey"
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                   onChange={(e) => setApiKeyInput(e.target.value)}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="settings-page__form-actions flex gap-2">
                 <Button type="submit" disabled={savingMakeSettings}>
                   {savingMakeSettings ? "Saving & verifying…" : "Save credentials"}
                 </Button>

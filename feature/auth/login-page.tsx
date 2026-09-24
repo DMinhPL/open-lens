@@ -40,18 +40,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <div className="absolute right-4 top-4">
+    <div className="login-page relative flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <div className="login-page__mode-toggle absolute right-4 top-4">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader className="items-center text-center">
+      <Card className="login-page__card w-full max-w-sm">
+        <CardHeader className="login-page__header items-center text-center">
           <Telescope className="mb-2 size-8" />
           <CardTitle>Connect to OpenProject</CardTitle>
           <CardDescription>Enter your instance URL and API token to get started.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+          <form className="login-page__form flex flex-col gap-4" onSubmit={onSubmit}>
             <div className="flex flex-col gap-2">
               <Label htmlFor="instanceUrl">Instance URL</Label>
               <Input
