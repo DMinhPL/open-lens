@@ -62,8 +62,8 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="type-throughput-chart">
+      <CardHeader className="type-throughput-chart__header">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -78,7 +78,7 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="type-throughput-chart__content h-64">
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (

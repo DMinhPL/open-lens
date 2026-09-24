@@ -67,7 +67,7 @@ export function TicketFlow({ workPackages, onSelect }: Readonly<TicketFlowProps>
   }
 
   return (
-    <div className="h-[70vh] w-full">
+    <div className="ticket-flow h-[70vh] w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}

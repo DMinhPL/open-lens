@@ -15,34 +15,34 @@ export function Topbar() {
   const { toggle } = useSidebar();
 
   return (
-    <header className="glass sticky top-0 z-30 flex min-h-14 flex-col gap-2 border-b border-b-transparent px-4 py-2 md:z-50 md:h-14 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0 md:px-6">
-      <div className="flex min-w-0 items-center justify-between gap-3">
+    <header className="topbar glass sticky top-0 z-30 flex min-h-14 flex-col gap-2 border-b border-b-transparent px-4 py-2 md:z-50 md:h-14 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0 md:px-6">
+      <div className="topbar__mobile-row flex min-w-0 items-center justify-between gap-3">
         <button
           type="button"
           onClick={toggle}
           aria-label="Toggle menu"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
+          className="topbar__menu-button rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
         >
           <Menu className="size-5" />
         </button>
-        <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+        <div className="topbar__title min-w-0 flex-1 truncate text-sm text-muted-foreground">
           {loading
             ? "Loading work packages…"
             : mode === "manager"
               ? "Project manager overview"
               : "Personal work monitoring"}
         </div>
-        <div className="md:hidden">
+        <div className="topbar__mobile-mode md:hidden">
           <ThemeToggle />
         </div>
       </div>
-      <div className="flex min-w-0 items-center gap-2 md:gap-3">
-        <div className="shrink-0">
+      <div className="topbar__controls flex min-w-0 items-center gap-2 md:gap-3">
+        <div className="topbar__project-select shrink-0">
           <ModeToggle />
         </div>
         {/* Project Selector:  */}
         <Select value={project} onValueChange={setProject}>
-          <SelectTrigger size="sm" className="min-w-0 flex-1 md:w-44 md:flex-none">
+          <SelectTrigger size="sm" className="topbar__project-trigger min-w-0 flex-1 md:w-44 md:flex-none">
             <SelectValue placeholder="All projects" />
           </SelectTrigger>
           <SelectContent>
@@ -56,7 +56,7 @@ export function Topbar() {
         </Select>
         {/* Period Selector:  */}
         <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <SelectTrigger size="sm" className="min-w-0 flex-1 md:w-36 md:flex-none">
+          <SelectTrigger size="sm" className="topbar__period-trigger min-w-0 flex-1 md:w-36 md:flex-none">
             <SelectValue placeholder="Period" />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +67,7 @@ export function Topbar() {
           </SelectContent>
         </Select>
 
-        <div className="hidden md:block">
+        <div className="topbar__mode hidden md:block">
           <ThemeToggle />
         </div>
       </div>

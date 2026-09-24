@@ -42,8 +42,8 @@ export function TypeDonut({ data }: TypeDonutProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="type-donut">
+      <CardHeader className="type-donut__header">
         <CardTitle className="text-sm font-medium">Ticket type overview</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -57,7 +57,7 @@ export function TypeDonut({ data }: TypeDonutProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="type-donut__content h-64">
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (

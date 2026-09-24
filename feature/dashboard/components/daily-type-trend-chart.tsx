@@ -63,8 +63,8 @@ export function DailyTypeTrendChart({ data }: DailyTypeTrendChartProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="daily-type-trend-chart">
+      <CardHeader className="daily-type-trend-chart__header">
         <CardTitle className="text-sm font-medium">Tickets created per day, by type</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -79,7 +79,7 @@ export function DailyTypeTrendChart({ data }: DailyTypeTrendChartProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="daily-type-trend-chart__content h-64">
         {types.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (

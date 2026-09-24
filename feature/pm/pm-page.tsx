@@ -135,7 +135,7 @@ export default function PmPage() {
   }
 
   return (
-    <div className="relative flex flex-col gap-6" aria-busy={loading || streaming}>
+    <div className="pm-page relative flex flex-col gap-6" aria-busy={loading || streaming}>
       {loading ? (
         <div
           role="status"
@@ -205,7 +205,7 @@ export default function PmPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="pm-page__breakdowns grid gap-4 lg:grid-cols-2">
         <div>
           {loading ? <Skeleton className="h-80 w-full" /> : <StatusDonut data={report?.statusBreakdown ?? []} />}
         </div>
@@ -222,7 +222,7 @@ export default function PmPage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="pm-page__throughput grid gap-4 lg:grid-cols-2">
         <div>
           {loading ? (
             <Skeleton className="h-80 w-full" />
@@ -239,7 +239,7 @@ export default function PmPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="pm-page__cycle-time grid gap-4 lg:grid-cols-2">
         <div>
           {loading ? (
             <Skeleton className="h-80 w-full" />

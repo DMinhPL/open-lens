@@ -56,8 +56,8 @@ export function TrendChart({ title, data }: TrendChartProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="trend-chart">
+      <CardHeader className="trend-chart__header">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -72,7 +72,7 @@ export function TrendChart({ title, data }: TrendChartProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="trend-chart__content h-64">
         <Line data={chartData} options={options} />
       </CardContent>
     </Card>

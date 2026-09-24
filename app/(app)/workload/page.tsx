@@ -63,14 +63,14 @@ export default function WorkloadPage() {
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">Failed to load data: {error}</p>;
+    return <p className="workload-page__error text-sm text-destructive">Failed to load data: {error}</p>;
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-medium">
+    <div className="workload-page flex flex-col gap-4">
+      <Card className="workload-page__card">
+        <CardHeader className="workload-page__header flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="workload-page__title text-sm font-medium">
             Open Task and Bug workload for {projectName} by{" "}
             {GROUP_OPTIONS.find((g) => g.value === groupBy)?.label.toLowerCase()}
           </CardTitle>
@@ -84,8 +84,8 @@ export default function WorkloadPage() {
             </TabsList>
           </Tabs>
         </CardHeader>
-        <CardContent>
-          {loading ? <Skeleton className="h-64 w-full" /> : <WorkloadChart data={workload} />}
+        <CardContent className="workload-page__content">
+          {loading ? <Skeleton className="workload-page__loading h-64 w-full" /> : <WorkloadChart data={workload} />}
         </CardContent>
       </Card>
     </div>

@@ -107,24 +107,24 @@ export default function TicketsPage() {
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">Failed to load data: {error}</p>;
+    return <p className="tickets-page__error text-sm text-destructive">Failed to load data: {error}</p>;
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="tickets-page flex flex-col gap-4">
+      <div className="tickets-page__filters flex flex-wrap items-center gap-3">
         <Input
           placeholder="Search tickets…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="tickets-page__search max-w-xs"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
+              className="tickets-page__project-filter w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
               aria-label="Filter by status"
             >
               <span className="min-w-0 truncate">
@@ -155,7 +155,7 @@ export default function TicketsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
+              className="tickets-page__assignee-filter w-40 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
               aria-label="Filter by type"
             >
               <span className="min-w-0 truncate">
@@ -182,7 +182,7 @@ export default function TicketsPage() {
           </DropdownMenuContent>
         </DropdownMenu>
         <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger size="sm" className="w-40">
+          <SelectTrigger size="sm" className="tickets-page__type-filter w-40">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -194,14 +194,14 @@ export default function TicketsPage() {
             ))}
           </SelectContent>
         </Select>
-        <span className="ml-auto text-sm text-muted-foreground">
+        <span className="tickets-page__count ml-auto text-sm text-muted-foreground">
           {loading ? "Loading…" : `${filtered.length} ticket${filtered.length === 1 ? "" : "s"}`}
         </span>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="tickets-page__table rounded-lg border">
         {loading ? (
-          <div className="space-y-2 p-4">
+          <div className="tickets-page__loading space-y-2 p-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
@@ -209,8 +209,8 @@ export default function TicketsPage() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-16 text-right">Order</TableHead>
+              <TableRow className="tickets-page__header-row">
+                <TableHead className="tickets-page__header-cell w-16 text-right">Order</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
@@ -222,13 +222,13 @@ export default function TicketsPage() {
                 <TableHead>Start date</TableHead>
                 <TableHead>Release Dev</TableHead>
                 <TableHead>Due date</TableHead>
-                <TableHead className="text-right">Logged time</TableHead>
+                <TableHead className="tickets-page__header-cell text-right">Logged time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground">
+                <TableRow className="tickets-page__empty-row">
+                  <TableCell colSpan={12} className="tickets-page__empty-state text-center text-muted-foreground">
                     No tickets assigned to you match the current filters.
                   </TableCell>
                 </TableRow>
@@ -243,6 +243,7 @@ export default function TicketsPage() {
                       tabIndex={0}
                       aria-label={`Open ticket ${wp.subject} in OpenProject${getReleaseDevUrgencyLabel(releaseDevUrgency)}`}
                       className={cn(
+                        "tickets-page__row",
                         "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         getReleaseDevRowClassName(releaseDevUrgency),
                       )}
@@ -254,46 +255,46 @@ export default function TicketsPage() {
                         }
                       }}
                     >
-                      <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
-                      <TableCell className="max-w-80 font-medium">
-                        <span className="block truncate" title={wp.subject}>
+                      <TableCell className="tickets-page__cell tickets-page__order-cell text-center text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__subject-cell max-w-80 font-medium">
+                        <span className="tickets-page__subject block truncate" title={wp.subject}>
                           {wp.subject}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__type-cell">
                         <Badge variant="outline" className={getTypeBadgeStyle(wp.type)}>
                           <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
                           {wp.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__status-cell">
                         <StatusBadge status={wp.statusLabel ?? wp.status} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{wp.author}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateTime(wp.createdAt)}</TableCell>
-                      <TableCell>
+                      <TableCell className="tickets-page__cell text-muted-foreground">{wp.author}</TableCell>
+                      <TableCell className="tickets-page__cell text-muted-foreground">{formatDateTime(wp.createdAt)}</TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__progress-cell">
                         <Badge variant="outline">{wp.priorityLabel ?? wp.priority}</Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{wp.project}</TableCell>
-                      <TableCell>
-                        <div className="flex min-w-28 items-center gap-2">
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <TableCell className="tickets-page__cell text-muted-foreground">{wp.project}</TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__progress-cell">
+                        <div className="tickets-page__progress flex min-w-28 items-center gap-2">
+                          <div className="tickets-page__progress-track h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                             <div
-                              className="h-full rounded-full bg-primary"
+                              className="tickets-page__progress-bar h-full rounded-full bg-primary"
                               style={{ width: `${Math.min(100, Math.max(0, wp.percentDone))}%` }}
                             />
                           </div>
-                          <span className="w-9 text-right text-muted-foreground">{wp.percentDone}%</span>
+                          <span className="tickets-page__progress-value w-9 text-right text-muted-foreground">{wp.percentDone}%</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.startDate)}</TableCell>
+                      <TableCell className="tickets-page__cell text-muted-foreground">{formatDateDDMMYYYY(wp.startDate)}</TableCell>
                       <TableCell
-                        className={cn("text-muted-foreground", getReleaseDevCellClassName(releaseDevUrgency))}
+                        className={cn("tickets-page__cell", "text-muted-foreground", getReleaseDevCellClassName(releaseDevUrgency))}
                       >
                         {formatDateDDMMYYYY(wp.customField25)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateDDMMYYYY(wp.dueDate)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">
+                      <TableCell className="tickets-page__cell text-muted-foreground">{formatDateDDMMYYYY(wp.dueDate)}</TableCell>
+                      <TableCell className="tickets-page__cell text-right text-muted-foreground">
                         {formatHours(wp.spentHours)}
                       </TableCell>
                     </TableRow>

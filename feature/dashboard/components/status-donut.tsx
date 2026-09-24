@@ -46,8 +46,8 @@ export function StatusDonut({ data }: StatusDonutProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="status-donut">
+      <CardHeader className="status-donut__header">
         <CardTitle className="text-sm font-medium">Status breakdown</CardTitle>
         <CardAction>
           <ChartHelpDialog
@@ -62,7 +62,7 @@ export function StatusDonut({ data }: StatusDonutProps) {
           </ChartHelpDialog>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="status-donut__content h-64">
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (

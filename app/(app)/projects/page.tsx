@@ -13,17 +13,17 @@ export default function ProjectsPage() {
   const { settings } = useOpSettings();
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Your projects</CardTitle>
+    <div className="projects-page flex flex-col gap-4">
+      <Card className="projects-page__card">
+        <CardHeader className="projects-page__header">
+          <CardTitle className="projects-page__title text-sm font-medium">Your projects</CardTitle>
           <CardDescription>
             Projects you belong to in OpenProject. Click a project to open it on the OpenProject site.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="projects-page__content">
           {projectsStatus === "loading" && (
-            <div className="space-y-2">
+            <div className="projects-page__loading space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
@@ -31,22 +31,22 @@ export default function ProjectsPage() {
           )}
 
           {projectsStatus === "failed" && (
-            <p className="text-sm text-destructive">{projectsError ?? "Could not load projects."}</p>
+            <p className="projects-page__error text-sm text-destructive">{projectsError ?? "Could not load projects."}</p>
           )}
 
           {projectsStatus === "succeeded" && projects && projects.length === 0 && (
-            <p className="text-sm text-muted-foreground">You are not a member of any project yet.</p>
+            <p className="projects-page__empty text-sm text-muted-foreground">You are not a member of any project yet.</p>
           )}
 
           {projectsStatus === "succeeded" && projects && projects.length > 0 && (
-            <ul className="divide-y">
+            <ul className="projects-page__list divide-y">
               {projects.map((project) => (
                 <li key={project.id}>
                   <a
                     href={getProjectUrl(settings?.instanceUrl, project.identifier)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-md px-1 py-3 transition-colors hover:bg-muted/50"
+                    className="projects-page__item flex items-center justify-between gap-3 rounded-md px-1 py-3 transition-colors hover:bg-muted/50"
                   >
                     <span className="flex items-center gap-2">
                       <FolderKanban className="size-4 text-muted-foreground" />

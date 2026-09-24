@@ -158,8 +158,8 @@ export default function WorkflowInstructionsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] items-start gap-4">
-      <div className="flex w-full max-w-xl shrink-0 flex-col gap-4">
+    <div className="workflow-instructions-page flex h-[calc(100vh-8rem)] items-start gap-4">
+      <div className="workflow-instructions-page__form-column flex w-full max-w-xl shrink-0 flex-col gap-4">
         {!make.hasCredentials && (
           <Card className="w-full border-amber-500/50 bg-amber-500/5">
             <CardContent className="flex items-start gap-3 py-4">
@@ -178,7 +178,7 @@ export default function WorkflowInstructionsPage() {
           </Card>
         )}
 
-        <Card className="w-full overflow-visible ring-1 ring-foreground/10 shadow-lg shadow-primary/5">
+        <Card className="workflow-instructions-page__form-card w-full overflow-visible ring-1 ring-foreground/10 shadow-lg shadow-primary/5">
           <CardHeader className="items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary/60 text-primary-foreground shadow-md shadow-primary/30">
               <Sparkles className="size-6" />
@@ -190,7 +190,7 @@ export default function WorkflowInstructionsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+            <form className="workflow-instructions-page__form flex flex-col gap-5" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="workflowTitle">Meeting title</Label>
                 <Input
@@ -277,7 +277,7 @@ export default function WorkflowInstructionsPage() {
       </div>
 
       {tickets.length > 0 && (
-        <Card className="flex h-full min-w-0 flex-1 flex-col ring-1 ring-foreground/10">
+        <Card className="workflow-instructions-page__results flex h-full min-w-0 flex-1 flex-col ring-1 ring-foreground/10">
           <CardHeader>
             <CardTitle className="text-base font-semibold">Generated tickets</CardTitle>
             <CardDescription>Click a ticket to review or edit it, then submit the whole list.</CardDescription>

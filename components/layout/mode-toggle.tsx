@@ -26,10 +26,10 @@ export function ModeToggle() {
   }
 
   return (
-    <Tabs value={mode} onValueChange={handleChange}>
-      <TabsList>
-        <TabsTrigger value="member">My work</TabsTrigger>
-        <TabsTrigger value="manager">Team</TabsTrigger>
+    <Tabs className="mode-toggle" value={mode} onValueChange={handleChange}>
+      <TabsList className="mode-toggle__list">
+        <TabsTrigger className="mode-toggle__option" value="member">My work</TabsTrigger>
+        <TabsTrigger className="mode-toggle__option" value="manager">Team</TabsTrigger>
       </TabsList>
     </Tabs>
   );
