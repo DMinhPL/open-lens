@@ -4,9 +4,10 @@ import type {
   CycleTimePoint,
   DailyTypeTrendPoint,
   DashboardStats,
-  Period,
+  DateRange,
   StatusBreakdown,
   TaskBugWorkloadEntry,
+  TrendGranularity,
   TrendPoint,
   ThroughputPoint,
   TypeBreakdown,
@@ -17,7 +18,7 @@ import type {
 } from "@/core/domain/types";
 import { DUMMY_STATUS_NAMES } from "@/core/colors/status-colors";
 import { CFD_STAGE_BY_STATUS, type CfdStage } from "@/core/domain/cfd-stages";
-import { wasCreatedInPeriod } from "@/core/domain/work-package-filters";
+import { getDateRangeBounds, getTrendGranularity, isWithinDateRange } from "@/core/domain/date-range";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -53,19 +54,16 @@ function addQuarters(date: Date, quarters: number): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + quarters * 3, 1));
 }
 
-function startOfYear(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-}
+/** Every UTC day of the range up to and including today, so future days don't plot as flat lines. */
+function daysInRange(range: DateRange): Date[] {
+  const { start, end } = getDateRangeBounds(range);
+  const tomorrow = addDays(new Date(), 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  const last = end < tomorrow ? end : tomorrow;
 
-function addYears(date: Date, years: number): Date {
-  return new Date(Date.UTC(date.getUTCFullYear() + years, date.getUTCMonth(), 1));
-}
-
-function periodStart(now: Date, period: Period): Date {
-  if (period === "week") return startOfWeek(now);
-  if (period === "quarter") return startOfQuarter(now);
-  if (period === "year") return startOfYear(now);
-  return startOfMonth(now);
+  const days: Date[] = [];
+  for (let day = start; day < last; day = addDays(day, 1)) days.push(day);
+  return days;
 }
 
 /**
@@ -118,55 +116,47 @@ export function computeWeeklyTrend(workPackages: WorkPackage[], numWeeks = 12): 
   return points;
 }
 
-export function computeMonthlyTrend(workPackages: WorkPackage[], numMonths = 6): TrendPoint[] {
-  const now = new Date();
-  const currentMonthStart = startOfMonth(now);
+const TREND_BUCKETS: Record<
+  TrendGranularity,
+  { startOf: (date: Date) => Date; next: (date: Date) => Date; label: (date: Date) => string }
+> = {
+  week: {
+    startOf: startOfWeek,
+    next: (date) => addDays(date, 7),
+    label: (date) => `${date.getUTCDate()}/${date.getUTCMonth() + 1}`,
+  },
+  month: {
+    startOf: startOfMonth,
+    next: (date) => addMonths(date, 1),
+    label: (date) => date.toLocaleString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" }),
+  },
+  quarter: {
+    startOf: startOfQuarter,
+    next: (date) => addQuarters(date, 1),
+    label: (date) => `Q${Math.floor(date.getUTCMonth() / 3) + 1} ${date.getUTCFullYear()}`,
+  },
+};
+
+/**
+ * Completed tickets per week/month/quarter across the selected range; the bucket size comes from
+ * the range length (see `getTrendGranularity`). Edge buckets are clipped to the range, so a
+ * partial first or last bucket only counts completions inside the range.
+ */
+export function computeTrend(workPackages: WorkPackage[], range: DateRange): TrendPoint[] {
+  const { start, end } = getDateRangeBounds(range);
+  const bucket = TREND_BUCKETS[getTrendGranularity(range)];
   const points: TrendPoint[] = [];
 
-  for (let i = numMonths - 1; i >= 0; i--) {
-    const monthStart = addMonths(currentMonthStart, -i);
-    const monthEnd = addMonths(currentMonthStart, -i + 1);
+  for (let bucketStart = bucket.startOf(start); bucketStart < end; bucketStart = bucket.next(bucketStart)) {
+    const bucketEnd = bucket.next(bucketStart);
     points.push({
-      label: monthStart.toLocaleString("en-US", { month: "short", timeZone: "UTC" }),
-      periodStart: monthStart.toISOString(),
-      completed: closedInRange(workPackages, monthStart, monthEnd),
-    });
-  }
-
-  return points;
-}
-
-export function computeQuarterlyTrend(workPackages: WorkPackage[], numQuarters = 4): TrendPoint[] {
-  const now = new Date();
-  const currentQuarterStart = startOfQuarter(now);
-  const points: TrendPoint[] = [];
-
-  for (let i = numQuarters - 1; i >= 0; i--) {
-    const qStart = addQuarters(currentQuarterStart, -i);
-    const qEnd = addQuarters(currentQuarterStart, -i + 1);
-    const q = Math.floor(qStart.getUTCMonth() / 3) + 1;
-    points.push({
-      label: `Q${q} ${qStart.getUTCFullYear()}`,
-      periodStart: qStart.toISOString(),
-      completed: closedInRange(workPackages, qStart, qEnd),
-    });
-  }
-
-  return points;
-}
-
-export function computeYearlyTrend(workPackages: WorkPackage[], numYears = 3): TrendPoint[] {
-  const now = new Date();
-  const currentYearStart = startOfYear(now);
-  const points: TrendPoint[] = [];
-
-  for (let i = numYears - 1; i >= 0; i--) {
-    const yearStart = addYears(currentYearStart, -i);
-    const yearEnd = addYears(currentYearStart, -i + 1);
-    points.push({
-      label: `${yearStart.getUTCFullYear()}`,
-      periodStart: yearStart.toISOString(),
-      completed: closedInRange(workPackages, yearStart, yearEnd),
+      label: bucket.label(bucketStart),
+      periodStart: bucketStart.toISOString(),
+      completed: closedInRange(
+        workPackages,
+        bucketStart < start ? start : bucketStart,
+        bucketEnd > end ? end : bucketEnd,
+      ),
     });
   }
 
@@ -250,7 +240,7 @@ export function computeTypeBreakdown(workPackages: WorkPackage[]): TypeBreakdown
 
 /**
  * Daily (UTC) count of tickets created per type, for the last `numDays` days including today.
- * Granularity is always daily regardless of the week/month/quarter period selector, since
+ * Granularity is always daily regardless of the selected date range, since
  * spotting a day where tickets pile up requires day-level resolution.
  */
 export function computeDailyTypeTrend(workPackages: WorkPackage[], numDays = 14): DailyTypeTrendPoint[] {
@@ -281,18 +271,18 @@ export function computeDailyTypeTrend(workPackages: WorkPackage[], numDays = 14)
 }
 
 /**
- * Per-type throughput (created vs. completed) within the currently selected period, reusing
- * the same period-window semantics as `wasCreatedInPeriod` elsewhere in the app.
+ * Per-type throughput (created vs. completed) within the selected date range, reusing the
+ * same inclusive-day semantics as `isWithinDateRange` elsewhere in the app.
  */
-export function computeTypeThroughput(workPackages: WorkPackage[], period: Period): TypeThroughput[] {
+export function computeTypeThroughput(workPackages: WorkPackage[], range: DateRange): TypeThroughput[] {
   const created = new Map<string, number>();
   const completed = new Map<string, number>();
 
   for (const wp of workPackages) {
-    if (wasCreatedInPeriod(wp.createdAt, period)) {
+    if (isWithinDateRange(wp.createdAt, range)) {
       created.set(wp.type, (created.get(wp.type) ?? 0) + 1);
     }
-    if (isWorkPackageCompleted(wp) && wasCreatedInPeriod(wp.closedAt ?? wp.updatedAt, period)) {
+    if (isWorkPackageCompleted(wp) && isWithinDateRange(wp.closedAt ?? wp.updatedAt, range)) {
       completed.set(wp.type, (completed.get(wp.type) ?? 0) + 1);
     }
   }
@@ -305,17 +295,13 @@ export function computeTypeThroughput(workPackages: WorkPackage[], period: Perio
 
 /**
  * Burnup series for Task/Bug tickets: cumulative scope (created) vs. cumulative completed
- * (Done), sampled daily from the start of the selected period through today.
+ * (Done), sampled daily across the selected range (capped at today).
  */
-export function computeBurnup(workPackages: WorkPackage[], period: Period): BurnupPoint[] {
+export function computeBurnup(workPackages: WorkPackage[], range: DateRange): BurnupPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
-  const now = new Date();
-  const start = periodStart(now, period);
-  const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const points: BurnupPoint[] = [];
-  for (let i = 0; i < numDays; i++) {
-    const dayStart = addDays(start, i);
+  for (const dayStart of daysInRange(range)) {
     const dayEnd = addDays(dayStart, 1);
 
     const total = relevant.filter((wp) => new Date(wp.createdAt) < dayEnd).length;
@@ -342,20 +328,16 @@ function classifyCfdStage(wp: WorkPackage): CfdStage {
 }
 
 /**
- * Cumulative flow series for Task/Bug tickets, sampled daily from the start of
- * the selected period through today. Splits the workflow into six stages
+ * Cumulative flow series for Task/Bug tickets, sampled daily across the selected
+ * range (capped at today). Splits the workflow into six stages
  * (backlog → ready → development → review → testing/acceptance → done) so
  * bottlenecks between coding, review, and QA are visible instead of hidden
  * inside a single "In Progress" band.
  */
-export function computeCumulativeFlow(workPackages: WorkPackage[], period: Period): CfdPoint[] {
+export function computeCumulativeFlow(workPackages: WorkPackage[], range: DateRange): CfdPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
-  const now = new Date();
-  const start = periodStart(now, period);
-  const numDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const points: CfdPoint[] = [];
-  for (let i = 0; i < numDays; i++) {
-    const dayStart = addDays(start, i);
+  for (const dayStart of daysInRange(range)) {
     const dayEnd = addDays(dayStart, 1);
     const counts: Record<CfdStage, number> = {
       backlog: 0,
@@ -381,22 +363,22 @@ export function computeCumulativeFlow(workPackages: WorkPackage[], period: Perio
   return points;
 }
 
-/** Completed Task/Bug tickets grouped into seven-day buckets within the selected period. */
+/** Completed Task/Bug tickets grouped into seven-day buckets from the start of the selected range. */
 export function computeWeeklyThroughput(
   workPackages: WorkPackage[],
-  period: Period,
+  range: DateRange,
 ): ThroughputPoint[] {
   const relevant = workPackages.filter((wp) => wp.type === "Task" || wp.type === "Bug");
+  const { start, end } = getDateRangeBounds(range);
   const now = new Date();
-  const start = periodStart(now, period);
   const points: ThroughputPoint[] = [];
 
-  for (let bucketStart = start; bucketStart <= now; bucketStart = addDays(bucketStart, 7)) {
+  for (let bucketStart = start; bucketStart < end && bucketStart <= now; bucketStart = addDays(bucketStart, 7)) {
     const bucketEnd = addDays(bucketStart, 7);
     points.push({
       label: `${bucketStart.getUTCDate()}/${bucketStart.getUTCMonth() + 1}`,
       date: bucketStart.toISOString(),
-      completedCount: closedInRange(relevant, bucketStart, bucketEnd),
+      completedCount: closedInRange(relevant, bucketStart, bucketEnd > end ? end : bucketEnd),
     });
   }
 
@@ -408,14 +390,13 @@ function daysBetween(start: Date, end: Date): number {
 }
 
 /** Cycle time is an approximation from creation to close, not true time-in-status. */
-export function computeCycleTime(workPackages: WorkPackage[], period: Period): CycleTimePoint[] {
-  const start = periodStart(new Date(), period);
+export function computeCycleTime(workPackages: WorkPackage[], range: DateRange): CycleTimePoint[] {
   return workPackages
     .filter(
       (wp) =>
         (wp.type === "Task" || wp.type === "Bug") &&
         isWorkPackageCompleted(wp) &&
-        new Date(wp.closedAt ?? wp.updatedAt) >= start,
+        isWithinDateRange(wp.closedAt ?? wp.updatedAt, range),
     )
     .map((wp) => {
       const completedDate = wp.closedAt ?? wp.updatedAt;

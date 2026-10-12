@@ -5,20 +5,21 @@ import { useFilters } from "@/core/filters-context";
 import { TicketFlow } from "@/feature/hierarchy/components/ticket-flow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GitBranch } from "lucide-react";
-import { matchesProject, wasCreatedInPeriod } from "@/core/domain/work-package-filters";
+import { matchesProject } from "@/core/domain/work-package-filters";
+import { isWithinDateRange } from "@/core/domain/date-range";
 import { getWorkPackageUrl } from "@/core/openproject/openproject-links";
 import { useOpSettings } from "@/core/openproject/use-op-settings";
 
 export default function HierarchyPage() {
-  const { allWorkPackages, loading, error, project, period } = useFilters();
+  const { allWorkPackages, loading, error, project, dateRange } = useFilters();
   const { settings } = useOpSettings();
 
   const filtered = useMemo(
     () =>
       allWorkPackages
         .filter((workPackage) => matchesProject(workPackage, project))
-        .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period)),
-    [allWorkPackages, project, period],
+        .filter((workPackage) => isWithinDateRange(workPackage.createdAt, dateRange)),
+    [allWorkPackages, project, dateRange],
   );
 
   function navigateToTicket(ticketId: number) {

@@ -17,8 +17,9 @@
  *   this route file and the two new exported chunked-fetch functions is safe at any time since
  *   nothing else references them.
  */
+import { parseDateRangeParams } from "@/core/domain/date-range";
 import { computeProjectManagerReport } from "@/core/domain/pm-report";
-import type { Period, ProjectManagerReport, ProjectManagerReportStreamFrame, WorkPackage } from "@/core/domain/types";
+import type { ProjectManagerReport, ProjectManagerReportStreamFrame, WorkPackage } from "@/core/domain/types";
 import {
   getProjectMembers,
   getStatuses,
@@ -27,7 +28,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const PERIODS = new Set<Period>(["week", "month", "quarter", "year"]);
 const THROTTLE_MS = 300;
 
 function frame(data: ProjectManagerReportStreamFrame): string {
@@ -41,7 +41,7 @@ function errorFrame(message: string): string {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const projectIdParam = url.searchParams.get("projectId");
-  const periodParam = url.searchParams.get("period") ?? "month";
+  const range = parseDateRangeParams(url.searchParams);
   const projectId = Number(projectIdParam);
 
   if (!projectIdParam || !/^\d+$/.test(projectIdParam) || !Number.isSafeInteger(projectId) || projectId <= 0) {
@@ -50,13 +50,12 @@ export async function GET(request: Request) {
       headers: { "Content-Type": "application/json" },
     });
   }
-  if (!PERIODS.has(periodParam as Period)) {
-    return new Response(JSON.stringify({ error: "period must be week, month, quarter, or year" }), {
+  if (!range) {
+    return new Response(JSON.stringify({ error: "from and to must be yyyy-MM-dd dates with from <= to" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
-  const period = periodParam as Period;
 
   const encoder = new TextEncoder();
   const signal = request.signal;
@@ -95,7 +94,7 @@ export async function GET(request: Request) {
           const now = Date.now();
           if (!force && now - lastEmit < THROTTLE_MS) return;
           lastEmit = now;
-          const report: ProjectManagerReport = computeProjectManagerReport(accumulated, members, statuses, period);
+          const report: ProjectManagerReport = computeProjectManagerReport(accumulated, members, statuses, range);
           safeEnqueue(frame({ report, receivedCount, totalCount, done: false }));
         };
 
@@ -109,7 +108,7 @@ export async function GET(request: Request) {
         );
 
         if (!signal.aborted) {
-          const finalReport = computeProjectManagerReport(accumulated, members, statuses, period);
+          const finalReport = computeProjectManagerReport(accumulated, members, statuses, range);
           safeEnqueue(
             frame({ report: finalReport, receivedCount: accumulated.length, totalCount: accumulated.length, done: true }),
           );

@@ -30,7 +30,14 @@ export interface WorkPackage {
   spentHours?: number; // total logged time in hours, from OpenProject's `spentTime` duration
 }
 
-export type Period = "week" | "month" | "quarter" | "year";
+/** Inclusive calendar-day range selected in the top bar; both ends are yyyy-MM-dd, evaluated as UTC days. */
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
+/** Bucket size for the completion trend, derived from the selected range's length. */
+export type TrendGranularity = "week" | "month" | "quarter";
 
 export interface TrendPoint {
   label: string;
@@ -56,8 +63,8 @@ export interface DailyTypeTrendPoint {
 
 export interface TypeThroughput {
   type: string;
-  created: number; // tickets of this type created within the selected period
-  completed: number; // tickets of this type completed within the selected period
+  created: number; // tickets of this type created within the selected date range
+  completed: number; // tickets of this type completed within the selected date range
 }
 
 export interface BurnupPoint {
@@ -203,7 +210,7 @@ export interface ProjectManagerReport {
 /** Cache key and request parameters for the compact Project Manager report. */
 export interface ProjectManagerReportQuery {
   projectId: number;
-  period: Period;
+  range: DateRange;
 }
 
 /**

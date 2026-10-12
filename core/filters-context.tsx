@@ -2,7 +2,8 @@
 
 import { useGetMyWorkPackagesQuery } from "@/core/api/api-slice";
 import { usePathname } from "next/navigation";
-import type { OpenProjectProjectSummary, Period, WorkPackage } from "@/core/domain/types";
+import { getDefaultDateRange } from "@/core/domain/date-range";
+import type { DateRange, OpenProjectProjectSummary, WorkPackage } from "@/core/domain/types";
 import { matchesProject } from "@/core/domain/work-package-filters";
 import { useAppSelector } from "@/core/store/hooks";
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
@@ -15,8 +16,8 @@ interface FiltersContextValue {
   projects: OpenProjectProjectSummary[];
   project: string;
   setProject: (project: string) => void;
-  period: Period;
-  setPeriod: (period: Period) => void;
+  dateRange: DateRange;
+  setDateRange: (dateRange: DateRange) => void;
   refresh: () => void;
 }
 
@@ -36,12 +37,12 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const error = queryError ? (queryError as { message?: string }).message ?? "Request failed" : null;
   const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
   const [project, setProjectState] = useState("all");
-  const [period, setPeriod] = useState<Period>("month");
+  const [dateRange, setDateRange] = useState<DateRange>(() => getDefaultDateRange());
 
   useEffect(() => {
     // Reads browser-only storage post-mount; cannot be a lazy useState initializer because this runs during SSR.
     const defaultProject = window.localStorage.getItem(DEFAULT_PROJECT_KEY);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     if (defaultProject) setProjectState(defaultProject);
   }, []);
 
@@ -52,7 +53,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const legacyProject = userProjects.find((userProject) => userProject.name === project);
     const migratedProject = legacyProject ? String(legacyProject.id) : "all";
     window.localStorage.setItem(DEFAULT_PROJECT_KEY, migratedProject);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- migrates legacy name-based project values to IDs
+
     setProjectState(migratedProject);
   }, [project, userProjects]);
 
@@ -76,8 +77,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     projects: userProjects ?? [],
     project,
     setProject,
-    period,
-    setPeriod,
+    dateRange,
+    setDateRange,
     refresh,
   };
 

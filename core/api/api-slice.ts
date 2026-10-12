@@ -69,8 +69,8 @@ export const openLensApi = createApi({
     }),
     /** Compact chart-ready report for Project Manager mode. */
     getProjectManagerReport: builder.query<ProjectManagerReport, ProjectManagerReportQuery>({
-      query: ({ projectId, period }) =>
-        `/api/openproject/pm-report?projectId=${projectId}&period=${period}`,
+      query: ({ projectId, range }) =>
+        `/api/openproject/pm-report?projectId=${projectId}&from=${range.from}&to=${range.to}`,
       providesTags: ["WorkPackages"],
       keepUnusedDataFor: 300,
     }),

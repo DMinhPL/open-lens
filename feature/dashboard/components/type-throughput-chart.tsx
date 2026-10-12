@@ -68,12 +68,12 @@ export function TypeThroughputChart({ title, data }: TypeThroughputChartProps) {
         <CardAction>
           <ChartHelpDialog
             title="Created versus completed by type"
-            description="Compares incoming and finished tickets for each type during the selected period."
+            description="Compares incoming and finished tickets for each type during the selected date range."
           >
             <p className="text-sm text-muted-foreground">
               When Created is higher than Completed, that type&apos;s queue may be growing. When
               Completed is higher, the team is reducing existing work. The two counts refer
-              to events in the period, so completed tickets may have been created earlier.
+              to events in the date range, so completed tickets may have been created earlier.
             </p>
           </ChartHelpDialog>
         </CardAction>

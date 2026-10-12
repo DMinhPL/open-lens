@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ProjectManagerReport, ProjectManagerReportStreamFrame, Period } from "@/core/domain/types";
+import type { DateRange, ProjectManagerReport, ProjectManagerReportStreamFrame } from "@/core/domain/types";
 
 export interface PmReportStreamQuery {
   projectId: number;
-  period: Period;
+  range: DateRange;
 }
 
 export interface PmReportStreamState {
@@ -38,16 +38,17 @@ const INITIAL_STATE: PmReportStreamStateWithQueryKey = {
  * query changes or the component unmounts, which a plain `EventSource` can't do as cleanly.
  *
  * Mirrors how `pm-page.tsx` previously built its RTK Query args: pass `null` for `query` to skip
- * (equivalent to `skipToken`), or `{ projectId, period }` to (re)connect.
+ * (equivalent to `skipToken`), or `{ projectId, range }` to (re)connect.
  */
 export function usePmReportStream(query: PmReportStreamQuery | null): PmReportStreamState {
   const [state, setState] = useState<PmReportStreamStateWithQueryKey>(INITIAL_STATE);
   const projectId = query?.projectId ?? null;
-  const period = query?.period ?? null;
-  const queryKey = projectId !== null && period !== null ? `${projectId}:${period}` : null;
+  const from = query?.range.from ?? null;
+  const to = query?.range.to ?? null;
+  const queryKey = projectId !== null && from !== null && to !== null ? `${projectId}:${from}:${to}` : null;
 
   useEffect(() => {
-    if (projectId === null || period === null) {
+    if (projectId === null || from === null || to === null) {
       setState(INITIAL_STATE);
       return;
     }
@@ -60,7 +61,7 @@ export function usePmReportStream(query: PmReportStreamQuery | null): PmReportSt
     async function run() {
       try {
         const res = await fetch(
-          `/api/openproject/pm-report-stream?projectId=${projectId}&period=${period}`,
+          `/api/openproject/pm-report-stream?projectId=${projectId}&from=${from}&to=${to}`,
           { signal: controller.signal },
         );
 
@@ -126,7 +127,7 @@ export function usePmReportStream(query: PmReportStreamQuery | null): PmReportSt
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, period]);
+  }, [projectId, from, to]);
 
   // Effects run after render. Hide the previous project's values immediately while the
   // effect starts the replacement stream, so project changes cannot show stale progress.

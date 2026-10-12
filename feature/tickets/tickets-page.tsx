@@ -26,15 +26,18 @@ import { useOpSettings } from "@/core/openproject/use-op-settings";
 import { getWorkPackageUrl } from "@/core/openproject/openproject-links";
 import {
   matchesProject,
-  wasCreatedInPeriod,
   getReleaseDevUrgency,
   getReleaseDevRowClassName,
   getReleaseDevCellClassName,
   getReleaseDevUrgencyLabel,
 } from "@/core/domain/work-package-filters";
+import { isWithinDateRange } from "@/core/domain/date-range";
 import { formatDateDDMMYYYY, cn } from "@/core/utils";
 import { getTypeBadgeStyle } from "@/core/colors/type-colors";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const DEFAULT_PAGE_SIZE = 20;
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString(undefined, {
@@ -56,12 +59,13 @@ function formatHours(hours?: number) {
 }
 
 export default function TicketsPage() {
-  const { allWorkPackages: workPackages, loading, error, project, period } = useFilters();
+  const { allWorkPackages: workPackages, loading, error, project, dateRange } = useFilters();
   const { settings } = useOpSettings();
   const [search, setSearch] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [priority, setPriority] = useState<string>("all");
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const statuses = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.statusLabel ?? wp.status))).sort(),
     [workPackages],
@@ -78,7 +82,7 @@ export default function TicketsPage() {
   const filtered = useMemo(() => {
     return workPackages
       .filter((wp) => matchesProject(wp, project))
-      .filter((wp) => wasCreatedInPeriod(wp.createdAt, period))
+      .filter((wp) => isWithinDateRange(wp.createdAt, dateRange))
       .filter((wp) =>
         selectedStatuses.length === 0
           ? true
@@ -88,8 +92,20 @@ export default function TicketsPage() {
       .filter((wp) => (priority === "all" ? true : (wp.priorityLabel ?? wp.priority) === priority))
       .filter((wp) => wp.subject.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [workPackages, project, period, search, selectedStatuses, selectedTypes, priority]);
+  }, [workPackages, project, dateRange, search, selectedStatuses, selectedTypes, priority]);
 
+  // Any filter change (including project/date range from the top bar) sends the table back to
+  // page 1. Tracked as a key next to the page instead of a reset effect, so there's no extra render.
+  const filterKey = JSON.stringify([project, dateRange, search, selectedStatuses, selectedTypes, priority, pageSize]);
+  const [pagination, setPagination] = useState({ filterKey, page: 1 });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const page = pagination.filterKey === filterKey ? Math.min(pagination.page, pageCount) : 1;
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filtered.slice(pageStart, pageStart + pageSize);
+
+  function goToPage(nextPage: number) {
+    setPagination({ filterKey, page: Math.min(Math.max(nextPage, 1), pageCount) });
+  }
   function toggleStatus(value: string, checked: boolean) {
     setSelectedStatuses((previous) =>
       checked ? [...previous, value] : previous.filter((status) => status !== value),
@@ -228,12 +244,12 @@ export default function TicketsPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow className="tickets-page__empty-row">
-                  <TableCell colSpan={12} className="tickets-page__empty-state text-center text-muted-foreground">
+                  <TableCell colSpan={13} className="tickets-page__empty-state text-center text-muted-foreground">
                     No tickets assigned to you match the current filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((wp, index) => {
+                pageRows.map((wp, index) => {
                   const releaseDevUrgency = getReleaseDevUrgency(wp);
 
                   return (
@@ -255,7 +271,7 @@ export default function TicketsPage() {
                         }
                       }}
                     >
-                      <TableCell className="tickets-page__cell tickets-page__order-cell text-center text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell className="tickets-page__cell tickets-page__order-cell text-center text-muted-foreground">{pageStart + index + 1}</TableCell>
                       <TableCell className="tickets-page__cell tickets-page__subject-cell max-w-80 font-medium">
                         <span className="tickets-page__subject block truncate" title={wp.subject}>
                           {wp.subject}
@@ -305,6 +321,56 @@ export default function TicketsPage() {
           </Table>
         )}
       </div>
+
+      {!loading && filtered.length > 0 ? (
+        <div className="tickets-page__pagination flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+          <div className="tickets-page__page-size flex items-center gap-2">
+            <span>Rows per page</span>
+            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+              <SelectTrigger size="sm" className="tickets-page__page-size-trigger w-20" aria-label="Rows per page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="tickets-page__page-nav flex items-center gap-3">
+            <span className="tickets-page__page-range">
+              {pageStart + 1}–{pageStart + pageRows.length} of {filtered.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="tickets-page__page-prev"
+                aria-label="Previous page"
+                disabled={page <= 1}
+                onClick={() => goToPage(page - 1)}
+              >
+                <ChevronLeftIcon />
+              </Button>
+              <span className="tickets-page__page-indicator min-w-20 text-center">
+                Page {page} of {pageCount}
+              </span>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="tickets-page__page-next"
+                aria-label="Next page"
+                disabled={page >= pageCount}
+                onClick={() => goToPage(page + 1)}
+              >
+                <ChevronRightIcon />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

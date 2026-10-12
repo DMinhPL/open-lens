@@ -5,14 +5,11 @@ import { useFilters } from "@/core/filters-context";
 import { useAppSelector } from "@/core/store/hooks";
 import { getStatusNames } from "@/core/colors/status-colors";
 import {
-  computeWeeklyTrend,
-  computeMonthlyTrend,
-  computeQuarterlyTrend,
+  computeTrend,
   computeStatusBreakdown,
   computeTypeBreakdown,
   computeDailyTypeTrend,
   computeTypeThroughput,
-  computeYearlyTrend,
   computeBurnup,
   computeCumulativeFlow,
   countStuckTickets,
@@ -40,7 +37,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, CheckCircle2, CircleDot, ListTodo, Timer } from "lucide-react";
 import {
   matchesProject,
-  wasCreatedInPeriod,
   getReleaseDevUrgency,
   getReleaseDevRowClassName,
   getReleaseDevCellClassName,
@@ -49,7 +45,8 @@ import {
 import { formatDateDDMMYYYY, cn } from "@/core/utils";
 import { getWorkPackageUrl } from "@/core/openproject/openproject-links";
 import { useOpSettings } from "@/core/openproject/use-op-settings";
-import type { Period } from "@/core/domain/types";
+import { formatDateRangeLabel, getTrendGranularity, isWithinDateRange } from "@/core/domain/date-range";
+import type { TrendGranularity } from "@/core/domain/types";
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -63,36 +60,14 @@ function monthsAgo(n: number) {
   return d;
 }
 
-const TREND_TITLES: Record<Period, string> = {
+const TREND_TITLES: Record<TrendGranularity, string> = {
   week: "Completed per week",
   month: "Completed per month",
   quarter: "Completed per quarter",
-  year: "Completed per year",
-};
-
-const BURNUP_TITLES: Record<Period, string> = {
-  week: "Task & Bug burnup (this week)",
-  month: "Task & Bug burnup (this month)",
-  quarter: "Task & Bug burnup (this quarter)",
-  year: "Task & Bug burnup (this year)",
-};
-
-const CFD_TITLES: Record<Period, string> = {
-  week: "Cumulative flow (this week)",
-  month: "Cumulative flow (this month)",
-  quarter: "Cumulative flow (this quarter)",
-  year: "Cumulative flow (this year)",
-};
-
-const THROUGHPUT_TITLES: Record<Period, string> = {
-  week: "Created vs completed by type (this week)",
-  month: "Created vs completed by type (this month)",
-  quarter: "Created vs completed by type (this quarter)",
-  year: "Created vs completed by type (this year)",
 };
 
 export default function DashboardPage() {
-  const { allWorkPackages, workPackages, loading, error, period, project } = useFilters();
+  const { allWorkPackages, workPackages, loading, error, dateRange, project } = useFilters();
   const { settings } = useOpSettings();
   const statuses = useAppSelector((state) => state.common.statuses);
 
@@ -100,12 +75,7 @@ export default function DashboardPage() {
   const completedThisMonth = useMemo(() => countCompletedSince(workPackages ?? [], monthsAgo(1)), [workPackages]);
   const completedThisQuarter = useMemo(() => countCompletedSince(workPackages ?? [], monthsAgo(3)), [workPackages]);
   const openCount = useMemo(() => (workPackages ?? []).filter((wp) => wp.status !== "Closed").length, [workPackages]);
-  const trend = useMemo(() => {
-    if (period === "week") return computeWeeklyTrend(workPackages, 12);
-    if (period === "quarter") return computeQuarterlyTrend(workPackages, 4);
-    if (period === "year") return computeYearlyTrend(workPackages, 3);
-    return computeMonthlyTrend(workPackages, 6);
-  }, [workPackages, period]);
+  const trend = useMemo(() => computeTrend(workPackages, dateRange), [workPackages, dateRange]);
 
   const statusBreakdown = useMemo(
     () => computeStatusBreakdown(workPackages, getStatusNames(statuses)),
@@ -115,31 +85,32 @@ export default function DashboardPage() {
   const typeBreakdown = useMemo(() => computeTypeBreakdown(workPackages), [workPackages]);
   const dailyTypeTrend = useMemo(() => computeDailyTypeTrend(workPackages), [workPackages]);
   const typeThroughput = useMemo(
-    () => computeTypeThroughput(workPackages, period),
-    [workPackages, period],
+    () => computeTypeThroughput(workPackages, dateRange),
+    [workPackages, dateRange],
   );
   const stuckTickets = useMemo(() => countStuckTickets(workPackages), [workPackages]);
-  const burnup = useMemo(() => computeBurnup(workPackages, period), [workPackages, period]);
-  const cfd = useMemo(() => computeCumulativeFlow(workPackages, period), [workPackages, period]);
+  const burnup = useMemo(() => computeBurnup(workPackages, dateRange), [workPackages, dateRange]);
+  const cfd = useMemo(() => computeCumulativeFlow(workPackages, dateRange), [workPackages, dateRange]);
 
   const recentList = useMemo(
     () =>
       allWorkPackages
         .filter((workPackage) => matchesProject(workPackage, project))
-        .filter((workPackage) => wasCreatedInPeriod(workPackage.createdAt, period))
+        .filter((workPackage) => isWithinDateRange(workPackage.createdAt, dateRange))
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, 7),
-    [allWorkPackages, project, period],
+    [allWorkPackages, project, dateRange],
   );
 
   function navigateToTicket(ticketId: number) {
     window.open(getWorkPackageUrl(settings?.instanceUrl, ticketId), "_blank", "noopener,noreferrer");
   }
 
-  const trendTitle = TREND_TITLES[period];
-  const throughputTitle = THROUGHPUT_TITLES[period];
-  const burnupTitle = BURNUP_TITLES[period];
-  const cfdTitle = CFD_TITLES[period];
+  const rangeLabel = formatDateRangeLabel(dateRange);
+  const trendTitle = TREND_TITLES[getTrendGranularity(dateRange)];
+  const throughputTitle = `Created vs completed by type (${rangeLabel})`;
+  const burnupTitle = `Task & Bug burnup (${rangeLabel})`;
+  const cfdTitle = `Cumulative flow (${rangeLabel})`;
 
   if (error) {
     return <p className="text-sm text-destructive">Failed to load data: {error}</p>;

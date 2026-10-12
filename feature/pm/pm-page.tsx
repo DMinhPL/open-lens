@@ -10,7 +10,8 @@ import { ChartHelpDialog } from "@/components/dashboard/chart-help-dialog";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, CheckCircle2, CircleDot, LoaderCircle, Users } from "lucide-react";
-import type { Period } from "@/core/domain/types";
+import { formatDateRangeLabel, getTrendGranularity } from "@/core/domain/date-range";
+import type { TrendGranularity } from "@/core/domain/types";
 
 const WorkloadChart = dynamic(
   () => import("@/components/dashboard/workload-chart").then((module) => module.WorkloadChart),
@@ -51,44 +52,16 @@ const CycleTimeChart = dynamic(
   { loading: () => <Skeleton className="h-80 w-full" />, ssr: false },
 );
 
-const TREND_TITLES: Record<Period, string> = {
+const TREND_TITLES: Record<TrendGranularity, string> = {
   week: "Completed per week",
   month: "Completed per month",
   quarter: "Completed per quarter",
-  year: "Completed per year",
-};
-
-const BURNUP_TITLES: Record<Period, string> = {
-  week: "Task & Bug burnup (this week)",
-  month: "Task & Bug burnup (this month)",
-  quarter: "Task & Bug burnup (this quarter)",
-  year: "Task & Bug burnup (this year)",
-};
-
-const CFD_TITLES: Record<Period, string> = {
-  week: "Cumulative flow (this week)",
-  month: "Cumulative flow (this month)",
-  quarter: "Cumulative flow (this quarter)",
-  year: "Cumulative flow (this year)",
-};
-
-const THROUGHPUT_TITLES: Record<Period, string> = {
-  week: "Weekly throughput (this week)",
-  month: "Weekly throughput (this month)",
-  quarter: "Weekly throughput (this quarter)",
-  year: "Weekly throughput (this year)",
-};
-
-const CYCLE_TIME_TITLES: Record<Period, string> = {
-  week: "Task & Bug cycle time (this week)",
-  month: "Task & Bug cycle time (this month)",
-  quarter: "Task & Bug cycle time (this quarter)",
-  year: "Task & Bug cycle time (this year)",
 };
 
 /** Project Manager mode backed by a compact, server-computed report. */
 export default function PmPage() {
-  const { project, projects, period } = useFilters();
+  const { project, projects, dateRange } = useFilters();
+  const rangeLabel = formatDateRangeLabel(dateRange);
   const projectId = project === "all" ? null : Number(project);
   const hasValidProject = projectId !== null && Number.isSafeInteger(projectId) && projectId > 0;
   const {
@@ -98,7 +71,7 @@ export default function PmPage() {
     isComplete,
     isLoading,
     error,
-  } = usePmReportStream(hasValidProject ? { projectId, period } : null);
+  } = usePmReportStream(hasValidProject ? { projectId, range: dateRange } : null);
   const projectName = projects.find((candidate) => candidate.id === projectId)?.name ?? "Selected project";
   const loading = !report && isLoading;
   // True once we have a partial report but the stream hasn't finished delivering every page yet.
@@ -144,7 +117,7 @@ export default function PmPage() {
           className={`fixed right-0 top-20 z-50 flex max-w-sm items-center gap-3 rounded-bl-2xl rounded-tl-2xl border border-primary/30 bg-background px-4 py-3 text-sm font-medium text-foreground shadow-lg ${statusActive ? "animate-in slide-in-from-right-5 fade-in-0 duration-200" : "animate-out slide-out-to-right-5 fade-out-0 duration-200"}`}
         >
           <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          Loading {period} report…
+          Loading report for {rangeLabel}…
         </div>
       ) : streaming || isStatusVisible ? (
         <div
@@ -218,7 +191,7 @@ export default function PmPage() {
         {loading ? (
           <Skeleton className="h-80 w-full" />
         ) : (
-          <TrendChart title={TREND_TITLES[period]} data={report?.trend ?? []} />
+          <TrendChart title={TREND_TITLES[getTrendGranularity(dateRange)]} data={report?.trend ?? []} />
         )}
       </div>
 
@@ -227,14 +200,14 @@ export default function PmPage() {
           {loading ? (
             <Skeleton className="h-80 w-full" />
           ) : (
-            <BurnupChart title={BURNUP_TITLES[period]} data={report?.burnup ?? []} />
+            <BurnupChart title={`Task & Bug burnup (${rangeLabel})`} data={report?.burnup ?? []} />
           )}
         </div>
         <div>
           {loading ? (
             <Skeleton className="h-80 w-full" />
           ) : (
-            <CfdChart title={CFD_TITLES[period]} data={report?.cfd ?? []} />
+            <CfdChart title={`Cumulative flow (${rangeLabel})`} data={report?.cfd ?? []} />
           )}
         </div>
       </div>
@@ -245,7 +218,7 @@ export default function PmPage() {
             <Skeleton className="h-80 w-full" />
           ) : (
             <ThroughputChart
-              title={THROUGHPUT_TITLES[period]}
+              title={`Weekly throughput (${rangeLabel})`}
               data={report?.throughput ?? []}
             />
           )}
@@ -255,7 +228,7 @@ export default function PmPage() {
             <Skeleton className="h-80 w-full" />
           ) : (
             <CycleTimeChart
-              title={CYCLE_TIME_TITLES[period]}
+              title={`Task & Bug cycle time (${rangeLabel})`}
               data={report?.cycleTime ?? []}
             />
           )}

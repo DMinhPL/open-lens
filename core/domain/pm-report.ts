@@ -4,19 +4,16 @@ import {
   computeBurnup,
   computeCumulativeFlow,
   computeCycleTime,
-  computeMonthlyTrend,
-  computeQuarterlyTrend,
   computeStatusBreakdown,
   computeTaskBugWorkload,
+  computeTrend,
   computeTypeBreakdown,
   computeWeeklyThroughput,
-  computeWeeklyTrend,
-  computeYearlyTrend,
 } from "@/core/domain/stats";
 import type {
+  DateRange,
   OpenProjectProjectMember,
   OpenProjectStatus,
-  Period,
   ProjectManagerReport,
   WorkPackage,
 } from "@/core/domain/types";
@@ -26,17 +23,8 @@ export function computeProjectManagerReport(
   workPackages: WorkPackage[],
   members: OpenProjectProjectMember[],
   statuses: OpenProjectStatus[],
-  period: Period,
+  range: DateRange,
 ): ProjectManagerReport {
-  const trend =
-    period === "week"
-      ? computeWeeklyTrend(workPackages, 12)
-      : period === "quarter"
-        ? computeQuarterlyTrend(workPackages, 4)
-        : period === "year"
-          ? computeYearlyTrend(workPackages, 3)
-          : computeMonthlyTrend(workPackages, 6);
-
   return {
     overview: computeProjectOverview(workPackages, members, statuses),
     memberStats: computeMemberWorkload(workPackages, members, statuses).filter(
@@ -49,11 +37,11 @@ export function computeProjectManagerReport(
     ).filter((entry) => entry.taskCount + entry.bugCount > 0),
     statusBreakdown: computeStatusBreakdown(workPackages, getStatusNames(statuses)),
     typeBreakdown: computeTypeBreakdown(workPackages),
-    trend,
-    burnup: computeBurnup(workPackages, period),
-    cfd: computeCumulativeFlow(workPackages, period),
-    throughput: computeWeeklyThroughput(workPackages, period),
-    cycleTime: computeCycleTime(workPackages, period),
+    trend: computeTrend(workPackages, range),
+    burnup: computeBurnup(workPackages, range),
+    cfd: computeCumulativeFlow(workPackages, range),
+    throughput: computeWeeklyThroughput(workPackages, range),
+    cycleTime: computeCycleTime(workPackages, range),
     generatedAt: new Date().toISOString(),
   };
 }

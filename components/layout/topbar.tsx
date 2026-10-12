@@ -3,14 +3,14 @@
 import { useFilters } from "@/core/filters-context";
 import { useMode } from "@/core/mode-context";
 import { useSidebar } from "@/core/sidebar-context";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ModeToggle } from "@/components/layout/mode-toggle";
+import { DateRangePicker } from "@/components/layout/date-range-picker";
+import { ProjectPicker } from "@/components/layout/project-picker";
 import { Menu } from "lucide-react";
-import type { Period } from "@/core/domain/types";
 
 export function Topbar() {
-  const { projects, project, setProject, period, setPeriod, loading } = useFilters();
+  const { loading } = useFilters();
   const { mode } = useMode();
   const { toggle } = useSidebar();
 
@@ -41,31 +41,9 @@ export function Topbar() {
           <ModeToggle />
         </div>
         {/* Project Selector:  */}
-        <Select value={project} onValueChange={setProject}>
-          <SelectTrigger size="sm" className="topbar__project-trigger min-w-0 flex-1 md:w-44 md:flex-none">
-            <SelectValue placeholder="All projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All projects</SelectItem>
-            {projects.map((projectOption) => (
-              <SelectItem key={projectOption.id} value={String(projectOption.id)}>
-                {projectOption.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {/* Period Selector:  */}
-        <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <SelectTrigger size="sm" className="topbar__period-trigger min-w-0 flex-1 md:w-36 md:flex-none">
-            <SelectValue placeholder="Period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">This week</SelectItem>
-            <SelectItem value="month">This month</SelectItem>
-            <SelectItem value="quarter">This quarter</SelectItem>
-            <SelectItem value="year">This year</SelectItem>
-          </SelectContent>
-        </Select>
+        <ProjectPicker className="topbar__project-trigger min-w-0 flex-1 md:w-44 md:flex-none" />
+        {/* Date Range Selector:  */}
+        <DateRangePicker className="topbar__date-range-trigger min-w-0 flex-1 md:w-auto md:flex-none" />
 
         <div className="topbar__mode hidden md:block">
           <ThemeToggle />
