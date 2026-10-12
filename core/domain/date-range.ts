@@ -73,7 +73,6 @@ export function getDateRangeBounds(range: DateRange): { start: Date; end: Date }
 /** True when the ISO timestamp falls on any day between `range.from` and `range.to`, inclusive. */
 export function isWithinDateRange(value: string | null | undefined, range: DateRange): boolean {
   if (!value) return false;
-  console.log("isWithinDateRange", value, range);
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
 
