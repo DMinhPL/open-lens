@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFilters } from "@/core/filters-context";
 import {
   Table,
@@ -58,14 +59,55 @@ function formatHours(hours?: number) {
   return `${wholeHours}h ${minutes}m`;
 }
 
+// useSearchParams requires a Suspense boundary for static rendering.
 export default function TicketsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TicketsContent />
+    </Suspense>
+  );
+}
+
+function TicketsContent() {
   const { allWorkPackages: workPackages, loading, error, project, dateRange } = useFilters();
   const { settings } = useOpSettings();
-  const [search, setSearch] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [priority, setPriority] = useState<string>("all");
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Filter state lives in the URL query string (?q=&status=&type=&priority=&size=&page=),
+  // so views are shareable/bookmarkable and survive reloads.
+  const search = searchParams.get("q") ?? "";
+  const selectedStatuses = searchParams.getAll("status");
+  const selectedTypes = searchParams.getAll("type");
+  const priority = searchParams.get("priority") ?? "all";
+  const sizeParam = Number(searchParams.get("size"));
+  const pageSize = PAGE_SIZE_OPTIONS.includes(sizeParam) ? sizeParam : DEFAULT_PAGE_SIZE;
+  const requestedPage = Math.max(1, Math.floor(Number(searchParams.get("page"))) || 1);
+
+  function updateQuery(update: (params: URLSearchParams) => void, { resetPage = true } = {}) {
+    const params = new URLSearchParams(searchParams.toString());
+    update(params);
+    if (resetPage) params.delete("page");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
+  function setSingle(params: URLSearchParams, key: string, value: string, defaultValue: string) {
+    if (value === defaultValue) params.delete(key);
+    else params.set(key, value);
+  }
+
+  function setMulti(params: URLSearchParams, key: string, values: string[]) {
+    params.delete(key);
+    values.forEach((value) => params.append(key, value));
+  }
+
+  const setSearch = (value: string) => updateQuery((p) => setSingle(p, "q", value, ""));
+  const setPriority = (value: string) => updateQuery((p) => setSingle(p, "priority", value, "all"));
+  const setPageSize = (value: number) =>
+    updateQuery((p) => setSingle(p, "size", String(value), String(DEFAULT_PAGE_SIZE)));
+
   const statuses = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.statusLabel ?? wp.status))).sort(),
     [workPackages],
@@ -94,28 +136,28 @@ export default function TicketsPage() {
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [workPackages, project, dateRange, search, selectedStatuses, selectedTypes, priority]);
 
-  // Any filter change (including project/date range from the top bar) sends the table back to
-  // page 1. Tracked as a key next to the page instead of a reset effect, so there's no extra render.
-  const filterKey = JSON.stringify([project, dateRange, search, selectedStatuses, selectedTypes, priority, pageSize]);
-  const [pagination, setPagination] = useState({ filterKey, page: 1 });
+  // Filter changes made here reset the page param; changing the top-bar project (also a URL
+  // param, owned by FiltersProvider) or date range only clamps the page to the available range.
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const page = pagination.filterKey === filterKey ? Math.min(pagination.page, pageCount) : 1;
+  const page = Math.min(requestedPage, pageCount);
   const pageStart = (page - 1) * pageSize;
   const pageRows = filtered.slice(pageStart, pageStart + pageSize);
 
   function goToPage(nextPage: number) {
-    setPagination({ filterKey, page: Math.min(Math.max(nextPage, 1), pageCount) });
+    const target = Math.min(Math.max(nextPage, 1), pageCount);
+    updateQuery((p) => setSingle(p, "page", String(target), "1"), { resetPage: false });
   }
+
   function toggleStatus(value: string, checked: boolean) {
-    setSelectedStatuses((previous) =>
-      checked ? [...previous, value] : previous.filter((status) => status !== value),
-    );
+    const next = checked
+      ? [...selectedStatuses, value]
+      : selectedStatuses.filter((status) => status !== value);
+    updateQuery((p) => setMulti(p, "status", next));
   }
 
   function toggleType(value: string, checked: boolean) {
-    setSelectedTypes((previous) =>
-      checked ? [...previous, value] : previous.filter((type) => type !== value),
-    );
+    const next = checked ? [...selectedTypes, value] : selectedTypes.filter((type) => type !== value);
+    updateQuery((p) => setMulti(p, "type", next));
   }
 
   function navigateToTicket(ticketId: number) {

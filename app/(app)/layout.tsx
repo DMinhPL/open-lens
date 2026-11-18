@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { FiltersProvider } from "@/core/filters-context";
@@ -8,6 +9,8 @@ import { UserBootstrap } from "@/components/user-bootstrap";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ModeProvider>
+      {/* FiltersProvider reads the URL query string (useSearchParams), which needs Suspense. */}
+      <Suspense fallback={null}>
       <FiltersProvider>
         <SidebarProvider>
           <UserBootstrap />
@@ -20,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarProvider>
       </FiltersProvider>
+      </Suspense>
     </ModeProvider>
   );
 }

@@ -213,18 +213,6 @@ export interface ProjectManagerReportQuery {
   range: DateRange;
 }
 
-/**
- * SSE payload envelope emitted by `GET /api/openproject/pm-report-stream`: a `ProjectManagerReport`
- * recomputed on the work packages received so far, alongside progress counters. `report` is `null`
- * only before the very first page has resolved.
- */
-export interface ProjectManagerReportStreamFrame {
-  report: ProjectManagerReport | null;
-  receivedCount: number;
-  totalCount: number;
-  done: boolean;
-}
-
 /** Response shape of `GET /api/settings` — shared between any page that needs to
  * know the connection state (Settings page, Projects page, ...). */
 export interface OpenProjectSettings {

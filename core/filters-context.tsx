@@ -1,12 +1,12 @@
 "use client";
 
 import { useGetMyWorkPackagesQuery } from "@/core/api/api-slice";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getDefaultDateRange } from "@/core/domain/date-range";
 import type { DateRange, OpenProjectProjectSummary, WorkPackage } from "@/core/domain/types";
 import { matchesProject } from "@/core/domain/work-package-filters";
 import { useAppSelector } from "@/core/store/hooks";
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 interface FiltersContextValue {
   allWorkPackages: WorkPackage[];
@@ -36,15 +36,45 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   } = useGetMyWorkPackagesQuery(undefined, { skip: pathname.startsWith("/pm") });
   const error = queryError ? (queryError as { message?: string }).message ?? "Request failed" : null;
   const allWorkPackages = useMemo(() => data?.workPackages ?? [], [data]);
-  const [project, setProjectState] = useState("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // The selected project lives in the URL (?project=<id|all>) so views are shareable. The state
+  // below is only the fallback when the URL has none (stored default, or the last pick after
+  // navigating to a page whose URL dropped the param).
+  const urlProject = searchParams.get("project");
+  const [fallbackProject, setFallbackProject] = useState("all");
+  const project = urlProject ?? fallbackProject;
   const [dateRange, setDateRange] = useState<DateRange>(() => getDefaultDateRange());
+
+  const replaceProjectParam = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("project", value);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const setProject = useCallback(
+    (value: string) => {
+      setFallbackProject(value);
+      replaceProjectParam(value);
+    },
+    [replaceProjectParam],
+  );
 
   useEffect(() => {
     // Reads browser-only storage post-mount; cannot be a lazy useState initializer because this runs during SSR.
     const defaultProject = window.localStorage.getItem(DEFAULT_PROJECT_KEY);
 
-    if (defaultProject) setProjectState(defaultProject);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only storage post-mount
+    if (defaultProject) setFallbackProject(defaultProject);
   }, []);
+
+  useEffect(() => {
+    // Keep the URL in sync after navigating to a page that dropped the param.
+    if (urlProject === null && fallbackProject !== "all") replaceProjectParam(fallbackProject);
+  }, [urlProject, fallbackProject, replaceProjectParam]);
 
   useEffect(() => {
     if (!userProjects || project === "all") return;
@@ -54,12 +84,9 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const migratedProject = legacyProject ? String(legacyProject.id) : "all";
     window.localStorage.setItem(DEFAULT_PROJECT_KEY, migratedProject);
 
-    setProjectState(migratedProject);
-  }, [project, userProjects]);
-
-  function setProject(value: string) {
-    setProjectState(value);
-  }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- migrates legacy name-based project values to IDs
+    setProject(migratedProject);
+  }, [project, userProjects, setProject]);
 
   const workPackages = useMemo(
     () =>

@@ -12,10 +12,17 @@ import { getTypeBadgeStyle } from "@/core/colors/type-colors";
 import { formatDateDDMMYYYY, cn } from "@/core/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { OpenProjectStatus, WorkPackage } from "@/core/domain/types";
+import { ChevronDownIcon } from "lucide-react";
 import {
   DAY_WIDTH_PX,
   TASK_COLUMN_WIDTH_PX,
@@ -44,8 +51,8 @@ export default function GanttPage() {
   const colorMap = useMemo(() => buildStatusColorMap(statuses), [statuses]);
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
   const statusOptions = useMemo(
     () => Array.from(new Set(workPackages.map((wp) => wp.statusLabel ?? wp.status))).sort((a, b) => a.localeCompare(b)),
@@ -60,11 +67,13 @@ export default function GanttPage() {
     return workPackages
       .map((wp) => ({ wp, span: getTaskSpan(wp) }))
       .filter((entry): entry is { wp: WorkPackage; span: TaskSpan } => entry.span !== null)
-      .filter(({ wp }) => (status === "all" ? true : (wp.statusLabel ?? wp.status) === status))
-      .filter(({ wp }) => (type === "all" ? true : wp.type === type))
+      .filter(({ wp }) =>
+        selectedStatuses.length === 0 ? true : selectedStatuses.includes(wp.statusLabel ?? wp.status),
+      )
+      .filter(({ wp }) => (selectedTypes.length === 0 ? true : selectedTypes.includes(wp.type)))
       .filter(({ wp }) => wp.subject.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => a.span.start.getTime() - b.span.start.getTime());
-  }, [workPackages, status, type, search]);
+  }, [workPackages, selectedStatuses, selectedTypes, search]);
 
   const range = useMemo(() => getGanttRange(scheduled.map(({ wp }) => wp)), [scheduled]);
   const ticks = useMemo(() => getTimelineTicks(range), [range]);
@@ -81,6 +90,18 @@ export default function GanttPage() {
     window.open(getWorkPackageUrl(settings?.instanceUrl, id), "_blank", "noopener,noreferrer");
   }
 
+  function toggleStatus(value: string, checked: boolean) {
+    setSelectedStatuses((previous) =>
+      checked ? [...previous, value] : previous.filter((status) => status !== value),
+    );
+  }
+
+  function toggleType(value: string, checked: boolean) {
+    setSelectedTypes((previous) =>
+      checked ? [...previous, value] : previous.filter((type) => type !== value),
+    );
+  }
+
   if (error) {
     return <p className="text-sm text-destructive">Failed to load data: {error}</p>;
   }
@@ -94,32 +115,68 @@ export default function GanttPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="gantt-search-input max-w-xs"
         />
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger size="sm" className="gantt-status-filter w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gantt-status-filter w-44 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
+              aria-label="Filter by status"
+            >
+              <span className="min-w-0 truncate">
+                {selectedStatuses.length === 0
+                  ? "All statuses"
+                  : selectedStatuses.length === 1
+                    ? selectedStatuses[0]
+                    : `${selectedStatuses.length} statuses`}
+              </span>
+              <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
             {statusOptions.map((s) => (
-              <SelectItem key={s} value={s}>
+              <DropdownMenuCheckboxItem
+                key={s}
+                checked={selectedStatuses.includes(s)}
+                onSelect={(event) => event.preventDefault()}
+                onCheckedChange={(checked) => toggleStatus(s, checked)}
+              >
                 {s}
-              </SelectItem>
+              </DropdownMenuCheckboxItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger size="sm" className="gantt-type-filter w-44">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {typeOptions.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
-              </SelectItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gantt-type-filter w-44 justify-between gap-1.5 rounded-[min(var(--radius-md),10px)] border-input bg-transparent py-2 pr-2 pl-2.5 text-sm font-normal"
+              aria-label="Filter by type"
+            >
+              <span className="min-w-0 truncate">
+                {selectedTypes.length === 0
+                  ? "All types"
+                  : selectedTypes.length === 1
+                    ? selectedTypes[0]
+                    : `${selectedTypes.length} types`}
+              </span>
+              <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {typeOptions.map((type) => (
+              <DropdownMenuCheckboxItem
+                key={type}
+                checked={selectedTypes.includes(type)}
+                onSelect={(event) => event.preventDefault()}
+                onCheckedChange={(checked) => toggleType(type, checked)}
+              >
+                {type}
+              </DropdownMenuCheckboxItem>
             ))}
-          </SelectContent>
-        </Select>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <GanttLegend />
         <span className="gantt-count-label ml-auto text-sm text-muted-foreground">{countLabel}</span>
       </div>

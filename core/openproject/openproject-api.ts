@@ -12,13 +12,19 @@ import type {
   OpenProjectProjectMember,
   OpenProjectStatus,
 } from "@/core/domain/types";
+import { fetchAllPages } from "@/core/streaming/paginated-fetch";
 
 /**
  * Single point of contact for authenticated GET requests against a live OpenProject
  * instance. Centralizes Basic-auth header construction and error handling so every
  * endpoint (work packages, users, projects, ...) goes through the same path.
  */
-async function openProjectGet<T>(instanceUrl: string, apiToken: string, path: string): Promise<T> {
+async function openProjectGet<T>(
+  instanceUrl: string,
+  apiToken: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<T> {
   const auth = Buffer.from(`apikey:${apiToken}`).toString("base64");
   const res = await fetch(`${instanceUrl.replace(/\/$/, "")}${path}`, {
     headers: {
@@ -26,6 +32,7 @@ async function openProjectGet<T>(instanceUrl: string, apiToken: string, path: st
       "Content-Type": "application/json",
     },
     cache: "no-store",
+    signal,
   });
 
   if (!res.ok) {
@@ -299,18 +306,15 @@ export async function fetchWorkPackagesForProject(
   return raw.map(mapWorkPackage);
 }
 
-/**
- * Bounded-concurrency variant of {@link fetchProjectCollection} + {@link fetchWorkPackagesForProject},
- * added for the streaming PM report endpoint. Fetches page 1 to learn `total` (same request shape as
- * `fetchProjectCollection`), then fetches the remaining pages with at most `CHUNK_FETCH_CONCURRENCY`
- * requests in flight at once, invoking `onChunk` with the newly-mapped elements after each page
- * resolves — so a caller can render partial results instead of waiting for every page like
- * `fetchWorkPackagesForProject` does. Does not modify or call through `fetchProjectCollection` /
- * `fetchWorkPackagesForProject`; it duplicates their request-building logic on purpose so those two
- * stay untouched for the existing (non-streaming) consumers.
- */
 const CHUNK_FETCH_CONCURRENCY = 4;
 
+/**
+ * Progressive variant of {@link fetchWorkPackagesForProject}, added for the streaming PM report
+ * endpoint. Thin OpenProject adapter over the generic `fetchAllPages` (see `core/streaming`): it only
+ * says HOW to fetch one page; paging, bounded concurrency (`CHUNK_FETCH_CONCURRENCY`), `onChunk`
+ * callbacks and abort handling live in the generic helper. `fetchProjectCollection` /
+ * `fetchWorkPackagesForProject` stay untouched for the existing (non-streaming) consumers.
+ */
 export async function fetchWorkPackagesForProjectChunked(
   instanceUrl: string,
   apiToken: string,
@@ -321,41 +325,21 @@ export async function fetchWorkPackagesForProjectChunked(
   const path = "/api/v3/work_packages";
   const filters: WorkPackageFilter[] = [{ project: { operator: "=", values: [String(projectId)] } }];
 
-  const firstPage = await openProjectGet<HalCollection<RawOpenProjectWorkPackage>>(
-    instanceUrl,
-    apiToken,
-    projectCollectionPageUrl(path, filters, 1),
-  );
-  const total = firstPage.total;
-  const all: WorkPackage[] = (firstPage._embedded?.elements ?? []).map(mapWorkPackage);
-  await onChunk(all, all.length, total);
-
-  const remainingPages = Math.ceil(total / PROJECT_COLLECTION_PAGE_SIZE) - 1;
-  if (remainingPages <= 0 || signal?.aborted) return all;
-
-  const pageNumbers = Array.from({ length: remainingPages }, (_, i) => i + 2);
-  let cursor = 0;
-
-  async function worker() {
-    while (cursor < pageNumbers.length) {
-      if (signal?.aborted) return;
-      const pageNumber = pageNumbers[cursor++];
-      const page = await openProjectGet<HalCollection<RawOpenProjectWorkPackage>>(
+  return fetchAllPages<WorkPackage>({
+    pageSize: PROJECT_COLLECTION_PAGE_SIZE,
+    concurrency: CHUNK_FETCH_CONCURRENCY,
+    signal,
+    onChunk,
+    fetchPage: async (page, pageSignal) => {
+      const json = await openProjectGet<HalCollection<RawOpenProjectWorkPackage>>(
         instanceUrl,
         apiToken,
-        projectCollectionPageUrl(path, filters, pageNumber),
+        projectCollectionPageUrl(path, filters, page),
+        pageSignal,
       );
-      if (signal?.aborted) return;
-      const mapped = (page._embedded?.elements ?? []).map(mapWorkPackage);
-      all.push(...mapped);
-      await onChunk(mapped, all.length, total);
-    }
-  }
-
-  const workerCount = Math.min(CHUNK_FETCH_CONCURRENCY, pageNumbers.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-
-  return all;
+      return { items: (json._embedded?.elements ?? []).map(mapWorkPackage), total: json.total };
+    },
+  });
 }
 
 interface RawOpenProjectMembership {
