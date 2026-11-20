@@ -39,12 +39,12 @@ export function StuckTicketsList({ tickets, onSelect, maxItems = 5 }: StuckTicke
                 className="flex w-full cursor-pointer items-center justify-between gap-3 px-6 py-3 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => onSelect(wp.id)}
               >
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-sm font-medium" title={wp.subject}>
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                  <span className="max-w-full truncate text-sm font-medium" title={wp.subject}>
                     {wp.subject}
                   </span>
                   <StatusBadge status={wp.statusLabel ?? wp.status} />
-                </div>
+                </span>
                 <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
                   {daysIdle(wp.updatedAt)}d idle
                 </span>
