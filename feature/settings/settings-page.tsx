@@ -74,6 +74,8 @@ export default function SettingsPage() {
     setWebhookUrlInput(make.webhookUrl);
   }, [make.webhookUrl]);
 
+
+
   async function handleSaveToken(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!instanceUrl || !apiToken) {
@@ -105,6 +107,8 @@ export default function SettingsPage() {
     }
   }
 
+
+
   async function handleClearToken() {
     await fetch("/api/login", { method: "DELETE" });
     toast.success("Token cleared. Falling back to dummy data.");
@@ -113,6 +117,8 @@ export default function SettingsPage() {
     dispatch(clearUser());
     dispatch(fetchCurrentUser());
   }
+
+
 
   async function handleSaveMakeSettings(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -144,6 +150,8 @@ export default function SettingsPage() {
     }
   }
 
+
+
   function handleClearMakeSettings() {
     make.clear();
     setWebhookUrlInput("");
@@ -152,6 +160,8 @@ export default function SettingsPage() {
     toast.success("Make.com credentials cleared");
   }
 
+
+
   async function handleToggleDummy(useDummyData: boolean) {
     await updateSettings({ useDummyData }).unwrap();
     refresh();
@@ -159,6 +169,8 @@ export default function SettingsPage() {
   }
 
   const MAX_WALLPAPER_BYTES = 3 * 1024 * 1024;
+
+
 
   function handleWallpaperChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -181,10 +193,14 @@ export default function SettingsPage() {
     reader.readAsDataURL(file);
   }
 
+
+
   function handleClearWallpaper() {
     wallpaper.clear();
     toast.success("Background reset to default");
   }
+
+
 
   function handleDefaultProjectChange(value: string) {
     setDefaultProject(value);

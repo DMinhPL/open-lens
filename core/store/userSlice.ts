@@ -45,6 +45,8 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
+
+
     clearUser(state) {
       state.info = null;
       state.infoStatus = "idle";

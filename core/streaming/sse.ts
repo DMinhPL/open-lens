@@ -8,9 +8,13 @@
 
 /** Context handed to your producer. */
 export interface SseContext<TFrame> {
-  /** Push one frame to the client. Silently ignored once the client is gone. */
+
+
+/** Push one frame to the client. Silently ignored once the client is gone. */
   send: (frame: TFrame) => void;
-  /** Aborted when the client disconnects. Pass it to `fetchAllPages` / `fetch`. */
+
+
+/** Aborted when the client disconnects. Pass it to `fetchAllPages` / `fetch`. */
   signal: AbortSignal;
 }
 
@@ -55,8 +59,12 @@ export function createSseResponse<TFrame>(
   const signal = request.signal;
 
   const stream = new ReadableStream<Uint8Array>({
+
+
     async start(controller) {
       let closed = false;
+
+
       const close = () => {
         if (closed) return;
         closed = true;
@@ -67,6 +75,8 @@ export function createSseResponse<TFrame>(
         }
       };
       signal.addEventListener("abort", close);
+
+
 
       const write = (text: string) => {
         if (closed || signal.aborted) return;

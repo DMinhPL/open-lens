@@ -90,6 +90,8 @@ export function DateRangePicker({ className }: Readonly<{ className?: string }>)
   if (draftRange) draftSummary = formatDateRangeLabel(draftRange);
   else if (draft?.from) draftSummary = "Pick an end date";
 
+
+
   function showRange(range: DateRange) {
     const months = getDisplayMonths(range);
     setDraft(toDayPickerRange(range));
@@ -97,11 +99,15 @@ export function DateRangePicker({ className }: Readonly<{ className?: string }>)
     setToMonth(months.to);
   }
 
+
+
   function handleOpenChange(nextOpen: boolean) {
     // Discard unapplied picks: reopening always starts from the applied range.
     if (nextOpen) showRange(dateRange);
     setOpen(nextOpen);
   }
+
+
 
   function handleSelect(range: DayPickerRange | undefined, triggerDate: Date) {
     // Once a range is complete, the next click starts a new one instead of moving the nearest end.
@@ -111,6 +117,8 @@ export function DateRangePicker({ className }: Readonly<{ className?: string }>)
     }
     setDraft(range);
   }
+
+
 
   function apply() {
     if (!draftRange) return;
@@ -128,6 +136,8 @@ export function DateRangePicker({ className }: Readonly<{ className?: string }>)
     endMonth: now,
     disabled: [{ before: toDate(ALL_TIME_START) }, { after: now }],
   };
+
+
 
   function renderPreset(key: string, text: string, range: DateRange | null, title?: string) {
     return (

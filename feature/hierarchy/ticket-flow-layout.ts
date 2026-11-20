@@ -25,6 +25,8 @@ export function buildTicketFlow(workPackages: WorkPackage[]): { nodes: TicketFlo
   const externalNodes = new Map<string, TicketFlowNode>();
   const edges: Edge[] = [];
 
+
+
   function edgeStyle(id: string, source: string, target: string): Edge {
     return { id, source, target, type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } };
   }

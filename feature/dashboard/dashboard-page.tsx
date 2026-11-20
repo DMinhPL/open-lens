@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type KeyboardEvent } from "react";
 import { useFilters } from "@/core/filters-context";
 import { useAppSelector } from "@/core/store/hooks";
 import { getStatusNames } from "@/core/colors/status-colors";
@@ -104,6 +104,13 @@ export default function DashboardPage() {
 
   function navigateToTicket(ticketId: number) {
     window.open(getWorkPackageUrl(settings?.instanceUrl, ticketId), "_blank", "noopener,noreferrer");
+  }
+
+  function handleTicketRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, ticketId: number) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    navigateToTicket(ticketId);
   }
 
   const rangeLabel = formatDateRangeLabel(dateRange);
@@ -227,12 +234,7 @@ export default function DashboardPage() {
                         getReleaseDevRowClassName(releaseDevUrgency),
                       )}
                       onClick={() => navigateToTicket(wp.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          navigateToTicket(wp.id);
-                        }
-                      }}
+                      onKeyDown={(event) => handleTicketRowKeyDown(event, wp.id)}
                     >
                       <TableCell className="font-medium">{wp.subject}</TableCell>
                       <TableCell>

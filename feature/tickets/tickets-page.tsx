@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFilters } from "@/core/filters-context";
 import {
@@ -23,7 +23,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useOpSettings } from "@/core/openproject/use-op-settings";
+import { apiFetch } from "@/core/api/http";
+import { useAppSelector } from "@/core/store/hooks";
 import { getWorkPackageUrl } from "@/core/openproject/openproject-links";
 import {
   matchesProject,
@@ -69,11 +78,20 @@ export default function TicketsPage() {
 }
 
 function TicketsContent() {
-  const { allWorkPackages: workPackages, loading, error, project, dateRange } = useFilters();
+  const { allWorkPackages: workPackages, loading, error, project, dateRange, refresh } = useFilters();
   const { settings } = useOpSettings();
+  const ticketStatuses = useAppSelector((state) => state.common.statuses) ?? [];
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [statusId, setStatusId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const progressInputRef = useRef<HTMLInputElement>(null);
+  const loggedHoursInputRef = useRef<HTMLInputElement>(null);
 
   // Filter state lives in the URL query string (?q=&status=&type=&priority=&size=&page=),
   // so views are shareable/bookmarkable and survive reloads.
@@ -104,7 +122,9 @@ function TicketsContent() {
   }
 
   const setSearch = (value: string) => updateQuery((p) => setSingle(p, "q", value, ""));
+
   const setPriority = (value: string) => updateQuery((p) => setSingle(p, "priority", value, "all"));
+
   const setPageSize = (value: number) =>
     updateQuery((p) => setSingle(p, "size", String(value), String(DEFAULT_PAGE_SIZE)));
 
@@ -160,8 +180,79 @@ function TicketsContent() {
     updateQuery((p) => setMulti(p, "type", next));
   }
 
-  function navigateToTicket(ticketId: number) {
-    window.open(getWorkPackageUrl(settings?.instanceUrl, ticketId), "_blank", "noopener,noreferrer");
+  const selectedTicket = workPackages.find((workPackage) => workPackage.id === selectedTicketId) ?? null;
+
+  function openTicket(ticket: (typeof workPackages)[number]) {
+    setSelectedTicketId(ticket.id);
+    setStatusId(String(ticketStatuses.find((status) => status.name === (ticket.statusLabel ?? ticket.status))?.id ?? ""));
+    setStartDate(ticket.startDate ?? "");
+    setDueDate(ticket.dueDate ?? "");
+    setSaveError(null);
+  }
+
+  function handleTicketRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, ticket: (typeof workPackages)[number]) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    openTicket(ticket);
+  }
+
+  async function saveTicket() {
+    if (!selectedTicket) return;
+
+    const progressValue = Number(progressInputRef.current?.value);
+    if (!Number.isInteger(progressValue) || progressValue < 0 || progressValue > 100) {
+      setSaveError("Progress must be a whole number from 0 to 100.");
+      return;
+    }
+
+    const loggedHoursValue = loggedHoursInputRef.current?.value.trim() ?? "";
+    const enteredHours = loggedHoursValue === "" ? undefined : Number(loggedHoursValue);
+    if (enteredHours !== undefined && (!Number.isFinite(enteredHours) || enteredHours <= 0)) {
+      setSaveError("Logged hours must be a positive number.");
+      return;
+    }
+
+    const currentStatusId = ticketStatuses.find(
+      (status) => status.name === (selectedTicket.statusLabel ?? selectedTicket.status),
+    )?.id;
+    const nextStatusId = Number(statusId);
+    const updates: {
+      percentageDone?: number;
+      statusId?: number;
+      loggedHours?: number;
+      startDate?: string;
+      dueDate?: string;
+    } = {};
+    if (progressValue !== selectedTicket.percentDone) updates.percentageDone = progressValue;
+    if (Number.isSafeInteger(nextStatusId) && nextStatusId > 0 && nextStatusId !== currentStatusId) {
+      updates.statusId = nextStatusId;
+    }
+    if (enteredHours !== undefined) updates.loggedHours = enteredHours;
+    if (startDate !== (selectedTicket.startDate ?? "")) updates.startDate = startDate;
+    if (dueDate !== (selectedTicket.dueDate ?? "")) updates.dueDate = dueDate;
+
+    if (Object.keys(updates).length === 0) {
+      setSelectedTicketId(null);
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const result = await apiFetch<{ ok: boolean; errors?: Record<string, string> }>(`/api/openproject/work-packages/${selectedTicket.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+      await refresh();
+      const errors = Object.values(result.errors ?? {});
+      if (errors.length === 0) setSelectedTicketId(null);
+      else setSaveError(errors.join(" "));
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save ticket changes.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (error) {
@@ -299,19 +390,14 @@ function TicketsContent() {
                       key={wp.id}
                       role="link"
                       tabIndex={0}
-                      aria-label={`Open ticket ${wp.subject} in OpenProject${getReleaseDevUrgencyLabel(releaseDevUrgency)}`}
+                      aria-label={`View ticket ${wp.subject}${getReleaseDevUrgencyLabel(releaseDevUrgency)}`}
                       className={cn(
                         "tickets-page__row",
                         "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         getReleaseDevRowClassName(releaseDevUrgency),
                       )}
-                      onClick={() => navigateToTicket(wp.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          navigateToTicket(wp.id);
-                        }
-                      }}
+                      onClick={() => openTicket(wp)}
+                      onKeyDown={(event) => handleTicketRowKeyDown(event, wp)}
                     >
                       <TableCell className="tickets-page__cell tickets-page__order-cell text-center text-muted-foreground">{pageStart + index + 1}</TableCell>
                       <TableCell className="tickets-page__cell tickets-page__subject-cell max-w-80 font-medium">
@@ -413,6 +499,134 @@ function TicketsContent() {
           </div>
         </div>
       ) : null}
+
+      <Dialog open={selectedTicket !== null} onOpenChange={(open) => !open && setSelectedTicketId(null)}>
+        <DialogContent className="tickets-page__ticket-dialog max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
+          {selectedTicket && (
+            <>
+              <DialogHeader className="tickets-page__ticket-dialog-header pr-8">
+                <DialogTitle className="tickets-page__ticket-dialog-title">{selectedTicket.subject}</DialogTitle>
+                <DialogDescription>
+                  #{selectedTicket.id} · {selectedTicket.type} · {selectedTicket.statusLabel ?? selectedTicket.status}
+                </DialogDescription>
+              </DialogHeader>
+
+              <dl className="tickets-page__ticket-details grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-muted-foreground">Project</dt>
+                  <dd>{selectedTicket.project}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd>
+                    <Select
+                      value={
+                        statusId ||
+                        String(ticketStatuses.find((status) => status.name === (selectedTicket.statusLabel ?? selectedTicket.status))?.id ?? "")
+                      }
+                      onValueChange={setStatusId}
+                    >
+                      <SelectTrigger size="sm" aria-label="Ticket status">
+                        <SelectValue placeholder={selectedTicket.statusLabel ?? selectedTicket.status} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ticketStatuses.map((status) => (
+                          <SelectItem key={status.id} value={String(status.id)}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Assignee</dt>
+                  <dd>{selectedTicket.assignee || "Unassigned"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Created by</dt>
+                  <dd>{selectedTicket.author}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Created at</dt>
+                  <dd>{formatDateTime(selectedTicket.createdAt)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Last updated</dt>
+                  <dd>{formatDateTime(selectedTicket.updatedAt)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Progress (%)</dt>
+                  <dd>
+                    <Input
+                      aria-label="Ticket progress percent"
+                      className="h-8"
+                      defaultValue={selectedTicket.percentDone}
+                      max={100}
+                      min={0}
+                      ref={progressInputRef}
+                      type="number"
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Log time (hours)</dt>
+                  <dd>
+                    <Input
+                      aria-label="Hours to log"
+                      className="h-8"
+                      defaultValue=""
+                      min={0}
+                      placeholder={`Current total: ${formatHours(selectedTicket.spentHours)}`}
+                      ref={loggedHoursInputRef}
+                      step="0.25"
+                      type="number"
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Start date</dt>
+                  <dd>
+                    <Input
+                      aria-label="Ticket start date"
+                      className="h-8"
+                      onChange={(event) => setStartDate(event.target.value)}
+                      type="date"
+                      value={startDate}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Due date</dt>
+                  <dd>
+                    <Input
+                      aria-label="Ticket due date"
+                      className="h-8"
+                      onChange={(event) => setDueDate(event.target.value)}
+                      type="date"
+                      value={dueDate}
+                    />
+                  </dd>
+                </div>
+              </dl>
+
+              <p className="text-xs text-muted-foreground">Logging time adds hours to the ticket&apos;s current total.</p>
+              {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
+
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={saving} onClick={saveTicket}>
+                  {saving ? "Saving…" : "Save changes"}
+                </Button>
+                <Button asChild className="tickets-page__ticket-open-link" variant="outline">
+                  <a href={getWorkPackageUrl(settings?.instanceUrl, selectedTicket.id)} target="_blank" rel="noopener noreferrer">
+                    Open in OpenProject
+                  </a>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

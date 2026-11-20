@@ -49,6 +49,8 @@ export async function GET(request: Request) {
 
     const accumulated: WorkPackage[] = [];
     const shouldEmit = createThrottle(THROTTLE_MS);
+
+
     const buildReport = () => computeProjectManagerReport(accumulated, members, statuses, range);
 
     await getWorkPackagesForProjectChunked(

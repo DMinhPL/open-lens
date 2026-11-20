@@ -9,6 +9,8 @@ export function useIsDarkMode(): boolean {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const root = document.documentElement;
 
+
+
     const compute = () => {
       const themeAttr = root.getAttribute("data-theme");
       setIsDark(themeAttr ? themeAttr === "dark" : media.matches);

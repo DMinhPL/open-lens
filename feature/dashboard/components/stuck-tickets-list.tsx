@@ -32,19 +32,12 @@ export function StuckTicketsList({ tickets, onSelect, maxItems = 5 }: StuckTicke
         ) : (
           <div className="divide-y">
             {visible.map((wp) => (
-              <div
+              <button
                 key={wp.id}
-                role="link"
-                tabIndex={0}
+                type="button"
                 aria-label={`Open ticket ${wp.subject} in OpenProject`}
-                className="flex cursor-pointer items-center justify-between gap-3 px-6 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex w-full cursor-pointer items-center justify-between gap-3 px-6 py-3 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => onSelect(wp.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(wp.id);
-                  }
-                }}
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="truncate text-sm font-medium" title={wp.subject}>
@@ -55,7 +48,7 @@ export function StuckTicketsList({ tickets, onSelect, maxItems = 5 }: StuckTicke
                 <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
                   {daysIdle(wp.updatedAt)}d idle
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}

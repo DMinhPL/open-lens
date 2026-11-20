@@ -16,7 +16,6 @@ import { getDeadlineUrgency } from "@/core/domain/work-package-filters";
  * rely on (`isClosedStatus`, `getDeadlineUrgency`) so "closed"/"overdue" stay consistent across
  * both modes.
  */
-
 function emptyMemberStat(memberId: number, memberName: string): MemberWorkloadStat {
   return {
     memberId,

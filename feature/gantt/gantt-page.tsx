@@ -86,15 +86,21 @@ export default function GanttPage() {
     ? "Loading…"
     : `${scheduled.length} task${scheduled.length === 1 ? "" : "s"}${unscheduledSuffix}`;
 
+
+
   function openTicket(id: number) {
     window.open(getWorkPackageUrl(settings?.instanceUrl, id), "_blank", "noopener,noreferrer");
   }
+
+
 
   function toggleStatus(value: string, checked: boolean) {
     setSelectedStatuses((previous) =>
       checked ? [...previous, value] : previous.filter((status) => status !== value),
     );
   }
+
+
 
   function toggleType(value: string, checked: boolean) {
     setSelectedTypes((previous) =>

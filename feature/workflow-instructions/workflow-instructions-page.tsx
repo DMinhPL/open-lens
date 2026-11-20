@@ -98,6 +98,8 @@ export default function WorkflowInstructionsPage() {
     return () => abortControllerRef.current?.abort();
   }, []);
 
+
+
   function handleFileDrop(e: React.DragEvent<HTMLButtonElement>) {
     e.preventDefault();
     setDragging(false);
@@ -109,6 +111,8 @@ export default function WorkflowInstructionsPage() {
     }
     setFile(dropped);
   }
+
+
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();

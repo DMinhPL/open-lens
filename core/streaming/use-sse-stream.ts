@@ -59,6 +59,8 @@ export function useSseStream<TData>(url: string | null): SseStreamState<TData> {
     let cancelled = false;
     setState(initialState<TData>(url, true));
 
+
+
     async function run(target: string) {
       try {
         const res = await fetch(target, { signal: controller.signal });

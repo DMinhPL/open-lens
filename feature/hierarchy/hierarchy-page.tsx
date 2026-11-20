@@ -22,6 +22,8 @@ export default function HierarchyPage() {
     [allWorkPackages, project, dateRange],
   );
 
+
+
   function navigateToTicket(ticketId: number) {
     window.open(getWorkPackageUrl(settings?.instanceUrl, ticketId), "_blank", "noopener,noreferrer");
   }

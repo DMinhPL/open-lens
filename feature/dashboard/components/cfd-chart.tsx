@@ -20,6 +20,9 @@ interface CfdChartProps {
   data: CfdPoint[];
 }
 
+// Areas stack bottom-up, so the legend order is reversed to match the chart.
+const STACKING_ORDER = [...CFD_STAGES].reverse();
+
 export function CfdChart({ title, data }: CfdChartProps) {
   const ink = useChartInk();
   const [visibleStages, setVisibleStages] = useState<Set<CfdStage>>(
@@ -121,9 +124,7 @@ export function CfdChart({ title, data }: CfdChartProps) {
                     labelStyle={{ color: ink.tooltip.titleColor }}
                     itemStyle={{ color: ink.tooltip.bodyColor }}
                   />
-                  {[...CFD_STAGES]
-                    .reverse()
-                    .filter((stage) => visibleStages.has(stage.key))
+                  {STACKING_ORDER.filter((stage) => visibleStages.has(stage.key))
                     .map((stage) => (
                       <Area
                         key={stage.key}
@@ -174,7 +175,6 @@ function ChartLegendItem({
       className="cfd-chart__legend-item flex items-center gap-2 rounded-sm text-left transition-opacity hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=hidden]:opacity-50"
       data-state={visible ? "visible" : "hidden"}
       aria-pressed={visible}
-      aria-label={`${visible ? "Hide" : "Show"} ${label} band`}
       title={`${visible ? "Hide" : "Show"} ${label} band`}
       onClick={onToggle}
     >
@@ -184,7 +184,6 @@ function ChartLegendItem({
         aria-hidden="true"
       />
       <span className="cfd-chart__legend-label">{label}</span>
-      <span className="sr-only">{visible ? "Visible" : "Hidden"}</span>
     </button>
   );
 }

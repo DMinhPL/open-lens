@@ -19,26 +19,40 @@
 
 export interface Page<T> {
   items: T[];
-  /** Total number of items across ALL pages (not just this page). */
+
+
+/** Total number of items across ALL pages (not just this page). */
   total: number;
 }
 
 export interface PaginatedFetchOptions<T> {
-  /**
+
+
+/**
    * Fetch one page. `page` is the number you should send to the API (starts at `firstPage`).
    * Forward `signal` to `fetch` so in-flight requests are cancelled too.
    * Do the raw→domain mapping inside here so `T` is already your final type.
    */
   fetchPage: (page: number, signal: AbortSignal) => Promise<Page<T>>;
-  /** Items per page — must match what `fetchPage` asks the API for. Used to compute page count. */
+
+
+/** Items per page — must match what `fetchPage` asks the API for. Used to compute page count. */
   pageSize: number;
-  /** Called after every page resolves, with only the newly arrived items. */
+
+
+/** Called after every page resolves, with only the newly arrived items. */
   onChunk: (newItems: T[], receivedCount: number, totalCount: number) => void | Promise<void>;
-  /** Max requests in flight at once. Default 4 (safe for self-hosted APIs). */
+
+
+/** Max requests in flight at once. Default 4 (safe for self-hosted APIs). */
   concurrency?: number;
-  /** Number of the first page. Default 1. Use 0 for zero-based APIs. */
+
+
+/** Number of the first page. Default 1. Use 0 for zero-based APIs. */
   firstPage?: number;
-  /** Abort from outside (e.g. `request.signal`). */
+
+
+/** Abort from outside (e.g. `request.signal`). */
   signal?: AbortSignal;
 }
 
@@ -47,6 +61,8 @@ export async function fetchAllPages<T>(options: PaginatedFetchOptions<T>): Promi
 
   // Internal controller: aborted when the caller aborts OR when any worker fails.
   const internal = new AbortController();
+
+
   const forwardAbort = () => internal.abort();
   if (signal?.aborted) internal.abort();
   else signal?.addEventListener("abort", forwardAbort, { once: true });
@@ -63,6 +79,8 @@ export async function fetchAllPages<T>(options: PaginatedFetchOptions<T>): Promi
 
     const pageNumbers = Array.from({ length: remainingPages }, (_, i) => firstPage + 1 + i);
     let cursor = 0;
+
+
 
     async function worker() {
       while (cursor < pageNumbers.length) {

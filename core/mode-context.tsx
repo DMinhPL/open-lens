@@ -32,6 +32,8 @@ export function ModeProvider({ children }: { children: ReactNode }) {
     if (stored === "member" || stored === "manager") setModeState(stored);
   }, []);
 
+
+
   function setMode(next: AppMode) {
     setModeState(next);
     window.localStorage.setItem(APP_MODE_KEY, next);

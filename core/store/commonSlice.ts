@@ -31,6 +31,8 @@ const commonSlice = createSlice({
   name: "common",
   initialState,
   reducers: {
+
+
     clearCommon(state) {
       state.statuses = null;
       state.statusesStatus = "idle";

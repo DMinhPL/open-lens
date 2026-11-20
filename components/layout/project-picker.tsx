@@ -58,6 +58,8 @@ export function ProjectPicker({ className }: Readonly<{ className?: string }>) {
       ?.scrollIntoView({ block: "nearest" });
   }, [open, activeOption]);
 
+
+
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       // Start fresh each time, with the current project highlighted.
@@ -67,10 +69,14 @@ export function ProjectPicker({ className }: Readonly<{ className?: string }>) {
     setOpen(nextOpen);
   }
 
+
+
   function select(value: string) {
     setProject(value);
     setOpen(false);
   }
+
+
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
